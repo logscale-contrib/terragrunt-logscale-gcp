@@ -2,6 +2,6 @@
 # feed forward to the child modules.
 locals {
   environment = "prod"
-  name        = "ls"
+  name        = "logscale"
   codename    = "ops"
 }
