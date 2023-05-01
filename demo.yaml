@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: neg-demo-app # Label for the Deployment
+  name: neg-demo-app # Name of Deployment
+spec:
+  selector:
+    matchLabels:
+      run: neg-demo-app
+  template: # Pod template
+    metadata:
+      labels:
+        run: neg-demo-app # Labels Pods from this Deployment
+    spec: # Pod specification; each Pod created by this Deployment has this specification
+      containers:
+        - image: registry.k8s.io/serve_hostname:v1.4 # Application to run in Deployment's Pods
+          name: hostname # Container name
+          ports:
+            - containerPort: 9376
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neg-demo-svc # Name of Service
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}' # Creates a NEG after an Ingress is created
+spec: # Service's specification
+  type: ClusterIP
+  selector:
+    run: neg-demo-app # Selects Pods labelled run: neg-demo-app
+  ports:
+    - name: http
+      port: 80 # Service's port
+      protocol: TCP
+      targetPort: 9376
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: neg-demo-ing
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: hello.gcp.dev.logsr.life
+    networking.gke.io/managed-certificates: managed-cert
+spec:
+  defaultBackend:
+    service:
+      name: neg-demo-svc # Name of the Service targeted by the Ingress
+      port:
+        number: 80 # Should match the port used by the Service
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: managed-cert
+spec:
+  domains:
+    - hello.gcp.dev.logsr.life
