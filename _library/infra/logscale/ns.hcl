@@ -41,6 +41,7 @@ dependency "k8s" {
 }
 dependencies {
   paths = [
+    "${get_terragrunt_dir()}/../project/",
     "${get_terragrunt_dir()}/../../../gke-addons/"
   ]
 }

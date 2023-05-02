@@ -50,8 +50,12 @@ locals {
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../k8s/"
 }
+dependency "bucket" {
+  config_path = "${get_terragrunt_dir()}/../bucket/"
+}
 dependencies {
   paths = [
+    "${get_terragrunt_dir()}/../project/",
     "${get_terragrunt_dir()}/../ns/",
     "${get_terragrunt_dir()}/../cert-ui/",
     "${get_terragrunt_dir()}/../cert-inputs/",
@@ -82,7 +86,7 @@ inputs = {
 
   release          = local.codename
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.32"
+  chart_version    = "v7.0.0-next.35"
   namespace        = "${local.name}-${local.codename}"
   create_namespace = false
   project          = "${local.name}-${local.codename}"
@@ -113,9 +117,8 @@ humio:
 
   # Object Storage Settings
   buckets:
-    type: none
-    # region: 
-    # storage: 
+    type: gcp
+    name: ${dependency.bucket.outputs.bucket_name}
 
   #Kafka
   kafka:
@@ -126,13 +129,7 @@ humio:
 
   #Image is shared by all node pools
   image:
-    # tag: 1.75.0--SNAPSHOT--build-353635--SHA-96e5fc2254e11bf9a10b24b749e4e5b197955607
-    #tag: 1.76.0--SNAPSHOT--build-359970--SHA-23a8fb2bc34e2dac49fedc09642a1b41013238f6
-    # tag: 1.77.0--SNAPSHOT--build-360968--SHA-2b8b9fb62ade3dbac30c4352716632e7fec92cb0
-    # tag: 1.78.0--SNAPSHOT--build-371116--SHA-82be774e353aeebd8e5cbfa88aef55cb8f5960a0
-    # tag: 1.79.0--SNAPSHOT--build-381031--SHA-3d907a8c1c8e9f1eab28ada26f6cc0f83b6c80d3
-    # tag: 1.85.0--SNAPSHOT--build-407197--SHA-ca91077cb4d27b39542c88fdce739446da79570d
-    tag: 1.85.0--SNAPSHOT--build-403093--SHA-c47da1d6c653292b221906371c718f8bf394cb59
+    tag: 1.89.0--SNAPSHOT--build-421995--SHA-39fbe50b07cf74200bcfbecd56ddf29506fa08bb
   # Primary Node pool used for digest/storage
   nodeCount: 3
   #In general for these node requests and limits should match
@@ -150,7 +147,6 @@ humio:
 
   serviceAccount:
     name: "logscale-${local.codename}"
-    # annotations:
       
   tolerations:
     - key: "workloadClass"

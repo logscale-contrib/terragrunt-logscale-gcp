@@ -21,7 +21,7 @@ locals {
   module_vars = read_terragrunt_config(find_in_parent_folders("modules.hcl"))
   source_module = {
     base_url = "git::git@github.com:logscale-contrib/terraform-self-managed-logscale-bucket.git"
-    version  = "?ref=v1.0.11"
+    version  = "?ref=v1.2.2"
   }
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
@@ -39,11 +39,24 @@ locals {
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../k8s/"
 }
-# dependencies {
-#   paths = [
-#     "${get_terragrunt_dir()}/../ns/",
-#   ]
-# }
+dependencies {
+  paths = [
+    "${get_terragrunt_dir()}/../ns/",
+  ]
+}
+
+generate "provider" {
+  path      = "provider_k8s.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
+provider "kubernetes" {
+  
+    host                   = "${dependency.k8s.outputs.kubernetes_endpoint}"
+    token = "${dependency.k8s.outputs.client_token}"
+    cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
+}
+EOF
+}
 # ---------------------------------------------------------------------------------------------------------------------
 # MODULE PARAMETERS
 # These are the variables we have to pass in to use the module. This defines the parameters that are common across all

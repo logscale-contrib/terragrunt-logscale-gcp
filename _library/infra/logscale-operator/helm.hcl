@@ -88,6 +88,13 @@ operator:
   image:
     repository: ghcr.io/ryanfaircloth/humio-operator/humio-operator
     tag: 92283ade36eb4e1846196fde3f66af882bb957c6
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi    
 prometheus:
   serviceMonitor:
     enabled: true  

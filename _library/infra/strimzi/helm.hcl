@@ -89,11 +89,11 @@ inputs = {
 watchAnyNamespace: true
 resources:
   requests:
-    cpu: 1000m
-    memory: 256Mi
+    cpu: 200m
+    memory: 512Mi
   limits:
     cpu: 1000m
-    memory: 256Mi
+    memory: 512Mi
 topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone
