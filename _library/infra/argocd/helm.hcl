@@ -44,12 +44,12 @@ locals {
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../k8s/"
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 dependencies {
   paths = [
     "${get_terragrunt_dir()}/../ns/",
-    "${get_terragrunt_dir()}/../../../gke-addons/"
+    "${get_terragrunt_dir()}/../gke-cert"
   ]
 }
 generate "provider" {
@@ -80,15 +80,12 @@ inputs = {
     create_namespace = true
 
     chart   = "argo-cd"
-    version = "5.27.4"
+    version = "5.31.0"
 
     wait   = true
     deploy = 1
   }
   values = [<<EOF
-# global:
-  # image:
-    # tag: v2.5.0-rc3
 argo-cd:
   config:
     application.resourceTrackingMethod: annotation

@@ -52,7 +52,7 @@ inputs = {
     {
       subnet_name   = "k8s"
       subnet_ip     = "10.0.0.0/17"
-      subnet_region = "us-central1"
+      subnet_region = local.region
     },
     # {
     #   subnet_name   = "k8s-svc"

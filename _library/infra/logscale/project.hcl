@@ -72,7 +72,7 @@ inputs = {
     {
       server    = "https://kubernetes.default.svc"
       name      = "in-cluster"
-      namespace = "${local.name}-${local.codename}"
+      namespace = "*"
     }
   ]
   namespaceResourceWhitelist = [

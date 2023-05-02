@@ -37,12 +37,7 @@ locals {
 }
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../k8s/"
-}
-dependencies {
-  paths = [
-    "${get_terragrunt_dir()}/../../../gke-addons/"
-  ]
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 
 generate "provider" {

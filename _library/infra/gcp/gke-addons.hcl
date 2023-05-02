@@ -38,10 +38,10 @@ locals {
 
 }
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../k8s/"
+  config_path = "${get_terragrunt_dir()}/../"
 }
 dependency "vpc" {
-  config_path = "${get_terragrunt_dir()}/../network/"
+  config_path = "${get_terragrunt_dir()}/../../network/"
 }
 
 generate "provider" {

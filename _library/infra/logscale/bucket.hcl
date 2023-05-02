@@ -21,7 +21,7 @@ locals {
   module_vars = read_terragrunt_config(find_in_parent_folders("modules.hcl"))
   source_module = {
     base_url = "git::git@github.com:logscale-contrib/terraform-self-managed-logscale-bucket.git"
-    version  = "?ref=v1.2.2"
+    version  = "?ref=v1.2.4"
   }
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
