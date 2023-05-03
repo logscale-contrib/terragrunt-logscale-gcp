@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "git::git@github.com:logscale-contrib/terraform-google-gke.git?ref=v1.4.27"
+  source = "git::git@github.com:logscale-contrib/terraform-google-gke.git?ref=v1.4.28"
 }
 
 

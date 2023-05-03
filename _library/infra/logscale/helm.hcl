@@ -79,7 +79,7 @@ inputs = {
 
   release          = local.codename
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.35"
+  chart_version    = "v7.0.0-next.36"
   namespace        = "${local.name}-${local.codename}"
   create_namespace = false
   project          = "${local.name}-${local.codename}"
@@ -473,12 +473,15 @@ zookeeper:
 
 otel:  
   components:
-    inject: false
-    app: false
-    cluster: false
-    nodes: false
-    logScaleConfig: false
-    serviceaccount: false
+    inject: true
+    app: true
+    cluster: true
+    nodes: true
+    logScaleConfig: true
+    serviceaccount: true
+  resourcedetectors:
+    - env
+    - gcp
 EOF
   )
 

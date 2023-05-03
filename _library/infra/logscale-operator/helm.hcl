@@ -69,7 +69,7 @@ inputs = {
 
   release          = local.codename
   chart            = "humio-operator"
-  chart_version    = "0.18.*"
+  chart_version    = "0.27.*"
   namespace        = "logscale-operator"
   create_namespace = false
   project          = "common"

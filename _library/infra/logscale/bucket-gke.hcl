@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "tfr:///terraform-google-modules/cloud-storage/google?version=4.0.0"
+  source = "tfr:///terraform-google-modules/cloud-storage/google//modules/simple_bucket?version=4.0.0"
 }
 
 
@@ -42,19 +42,16 @@ dependency "sa" {
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+  name      = "${local.name}-${local.codename}"
+  project_id = local.project_id
+  location   = local.region
 
-  project_id      = local.project_id
-  location        = local.region
-  names           = [format("%s-%s", "${local.name}-${local.codename}", "${local.name}-${local.codename}")]
-  prefix          = "${local.name}-${local.env}-${local.codename}"
-  set_admin_roles = true
-  versioning = {
-    first = true
-  }
-  bucket_admins = {
-    ls = dependency.sa.outputs.gcp_service_account_name
-  }
-
-
+  versioning = true
+  iam_members = [
+    {
+      role   = "roles/storage.objectAdmin"
+      member = "serviceAccount:${dependency.sa.outputs.gcp_service_account_email}"
+    }
+  ]
 
 }
