@@ -39,11 +39,14 @@ generate "provider" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-provider "kubernetes" {
-  
-    host                   = "${dependency.k8s.outputs.kubernetes_endpoint}"
-    token = "${dependency.k8s.outputs.client_token}"
+provider "kubernetes" {  
+    host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      args        = []
+      command     = "gke-gcloud-auth-plugin"
+  }
 }
 EOF
 }

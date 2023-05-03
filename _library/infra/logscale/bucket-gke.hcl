@@ -42,7 +42,7 @@ dependency "sa" {
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name      = "${local.name}-${local.codename}"
+  name       = "${local.name}-${local.codename}"
   project_id = local.project_id
   location   = local.region
 
