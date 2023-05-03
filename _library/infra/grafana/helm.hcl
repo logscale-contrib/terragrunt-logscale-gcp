@@ -10,15 +10,13 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "${local.source_module.base_url}${local.source_module.version}"
+  source = "git::git@github.com:logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v1.4.4"
 }
 
-# ---------------------------------------------------------------------------------------------------------------------
-# Locals are named constants that are reusable within the configuration.
-# ---------------------------------------------------------------------------------------------------------------------
+
 locals {
-  module_vars   = read_terragrunt_config(find_in_parent_folders("modules.hcl"))
-  source_module = local.module_vars.locals.helm_release
+  # Expose the base source URL so different versions of the module can be deployed in different environments. This will
+  # be used to construct the terraform block in the child terragrunt configurations.
 
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
@@ -32,36 +30,32 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
-
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
-
-  host_name = "grafana"
-
 
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../k8s/"
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
+
 dependencies {
   paths = [
+    "${get_terragrunt_dir()}/../../common/project/",
     "${get_terragrunt_dir()}/../ns/",
-    "${get_terragrunt_dir()}/../../../gke-addons/"
+    "${get_terragrunt_dir()}/../helm-crds/"
   ]
 }
 generate "provider" {
-  path      = "provider_gke.tf"
+  path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-
-provider "helm" {
-  kubernetes {
+provider "kubernetes" {
+  
     host                   = "${dependency.k8s.outputs.kubernetes_endpoint}"
     token = "${dependency.k8s.outputs.client_token}"
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-  }
 }
 EOF
 }
@@ -71,122 +65,45 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-
+  uniqueName = "${local.name}-${local.codename}"
 
   repository = "https://prometheus-community.github.io/helm-charts"
-  namespace  = "monitoring"
-  app = {
-    name             = "ops"
-    chart            = "kube-prometheus-stack"
-    version          = "45.8.*"
-    create_namespace = false
-    deploy           = 1
-  }
-  values = [yamlencode({
-    prometheusOperator = {
-      admissionWebhooks = {
-        certManager = {
-          enabled = true
-        }
-      }
+
+  release          = "ops"
+  chart            = "kube-prometheus-stack"
+  chart_version    = "45.24.0"
+  namespace        = "monitoring"
+  create_namespace = false
+  project          = "common"
+
+  server_side_apply = false
+
+  values = yamldecode(<<EOF
+prometheusOperator:
+  admissionWebhooks:
+    certManager:
+      enabled: true
+alertmanagerSpec:
+  storage:
+    storageClassName: standard-rwo
+    accessModes: ["ReadWriteOnce"]
+    requests:
+      storage: 50Gi
+prometheusSpec:
+  storage:
+    storageClassName: standard-rwo
+    accessModes: ["ReadWriteOnce"]
+    requests:
+      storage: 50Gi    
+
+EOF
+  )
+
+  ignoreDifferences = [
+    {
+      "group" : "*"
+      "kind" : "Certificate"
+      "jsonPointers" : ["/status/conditions"]
     }
-    alertmanagerSpec = {
-      storage = {
-        storageClassName = "standard-rwo"
-        accessModes      = ["ReadWriteOnce"]
-        resources = {
-          requests = {
-            storage = "50Gi"
-          }
-        }
-      }
-    }
-    prometheusSpec = {
-      storage = {
-        storageClassName = "standard-rwo"
-        accessModes      = ["ReadWriteOnce"]
-        resources = {
-          requests = {
-            storage = "50Gi"
-          }
-        }
-      }
-      additionalServiceMonitors = [
-        {
-          name     = "linkerd-federate"
-          jobLabel = "app"
-          #targetLabels = 
-          selector = {
-            matchLabels = {
-              component = "prometheus"
-            }
-          }
-          namespaceSelector = {
-            matchNames = [
-              "linkerd-viz"
-            ]
-          }
-          endpoints = [
-            {
-              interval      = "30s"
-              scrapeTimeout = "30s"
-              params = {
-                "match[]" = [
-                  "{job=\"linkerd-proxy\"}",
-                  "{job=\"linkerd-controller\"}"
-                ]
-              }
-              path        = "/federate"
-              port        = "admin-http"
-              honorLabels = true
-              relabelings : [
-                {
-                  action = "keep"
-                  regex  = "^prometheus$"
-                  sourceLabels = [
-                    "__meta_kubernetes_pod_container_name"
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-    thanosRulerSpec = {
-      storage = {
-        storageClassName = "standard-rwo"
-        accessModes      = ["ReadWriteOnce"]
-        resources = {
-          requests = {
-            storage = "50Gi"
-          }
-        }
-      }
-    }
-    "prometheus-node-exporter" = {
-      affinity = {
-        nodeAffinity = {
-          requiredDuringSchedulingIgnoredDuringExecution = {
-            nodeSelectorTerms = [
-              {
-                matchExpressions = [
-                  {
-                    key      = "eks.amazonaws.com/compute-type"
-                    operator = "NotIn"
-                    values   = ["fargate"]
-                  },
-                  {
-                    key      = "kubernetes.io/os"
-                    operator = "In"
-                    values   = ["linux"]
-                  }
-                ]
-              }
-            ]
-          }
-        }
-      }
-    }
-  })]
+  ]
 }

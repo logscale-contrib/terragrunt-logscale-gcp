@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "${local.source_module.base_url}${local.source_module.version}"
+  source = "git::git@github.com:logscale-contrib/terraform-google-gke.git?ref=v1.4.27"
 }
 
 
@@ -19,10 +19,6 @@ terraform {
 # Locals are named constants that are reusable within the configuration.
 # ---------------------------------------------------------------------------------------------------------------------
 locals {
-  source_module = {
-    base_url = "git::git@github.com:logscale-contrib/terraform-google-gke.git"
-    version  = "?ref=v1.4.27"
-  }
 
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id

@@ -55,12 +55,23 @@ remote_state {
     if_exists = "overwrite_terragrunt"
   }
   config = {
-    project     = local.project_id
-    bucket = "logsrlife-terragrunt"
-    prefix = "logscale/${path_relative_to_include()}"
+    project = local.project_id
+    bucket  = "logsrlife-terragrunt"
+    prefix  = "logscale/${path_relative_to_include()}"
   }
 }
 
+terraform {
+  extra_arguments "init_args" {
+    commands = [
+      "init"
+    ]
+
+    arguments = [
+      "-upgrade",
+    ]
+  }
+}
 
 
 # ---------------------------------------------------------------------------------------------------------------------

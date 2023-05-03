@@ -10,17 +10,13 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "${local.source_module.base_url}${local.source_module.version}"
+  source = "git::git@github.com:logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v1.4.4"
 }
 
-# ---------------------------------------------------------------------------------------------------------------------
-# Locals are named constants that are reusable within the configuration.
-# ---------------------------------------------------------------------------------------------------------------------
+
 locals {
   # Expose the base source URL so different versions of the module can be deployed in different environments. This will
   # be used to construct the terraform block in the child terragrunt configurations.
-  module_vars   = read_terragrunt_config(find_in_parent_folders("modules.hcl"))
-  source_module = local.module_vars.locals.helm_release
 
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
@@ -34,35 +30,30 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
-
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
-
-  host_name = "argocd"
 
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../k8s/"
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
+
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../ns/",
-    "${get_terragrunt_dir()}/../../../gke-addons/"
+    "${get_terragrunt_dir()}/../../common/project/"
   ]
 }
 generate "provider" {
-  path      = "provider_gke.tf"
+  path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-
-provider "helm" {
-  kubernetes {
+provider "kubernetes" {
+  
     host                   = "${dependency.k8s.outputs.kubernetes_endpoint}"
     token = "${dependency.k8s.outputs.client_token}"
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-  }
 }
 EOF
 }
@@ -72,20 +63,20 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+  uniqueName = "${local.name}-${local.codename}"
+
   repository = "https://strimzi.io/charts/"
-  namespace  = "strimzi-operator"
 
-  app = {
-    name             = "cw"
-    chart            = "strimzi-kafka-operator"
-    version          = "0.34.*"
-    create_namespace = false
-    deploy           = 1
-  }
-
+  release          = local.codename
+  chart            = "strimzi-kafka-operator"
+  chart_version    = "0.34.*"
+  namespace        = "strimzi-operator"
+  create_namespace = false
+  project          = "common"
+  skipCrds         = false
 
 
-  values = [<<EOF
+  values = yamldecode(<<EOF
 watchAnyNamespace: true
 resources:
   requests:
@@ -99,6 +90,8 @@ topologySpreadConstraints:
     topologyKey: topology.kubernetes.io/zone
     whenUnsatisfiable: DoNotSchedule
 EOF
-  ]
+  )
 
+  ignoreDifferences = [
+  ]
 }

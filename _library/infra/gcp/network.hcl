@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "${local.source_module.base_url}${local.source_module.version}"
+  source = "tfr:///terraform-google-modules/network/google?version=6.0.1"
 }
 
 
@@ -19,10 +19,7 @@ terraform {
 # Locals are named constants that are reusable within the configuration.
 # ---------------------------------------------------------------------------------------------------------------------
 locals {
-  source_module = {
-    base_url = "tfr:///terraform-google-modules/network/google"
-    version  = "?version=6.0.1"
-  }
+
 
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id

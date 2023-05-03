@@ -9,20 +9,14 @@
 # working directory, into a temporary folder, and execute your Terraform commands in that folder. If any environment
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
-
 terraform {
-  source = "${local.source_module.base_url}${local.source_module.version}"
+  source = "git::git@github.com:logscale-contrib/terraform-k8s-namespace.git?ref=v1.0.0"
 }
-
-
 # ---------------------------------------------------------------------------------------------------------------------
 # Locals are named constants that are reusable within the configuration.
 # ---------------------------------------------------------------------------------------------------------------------
 locals {
-  source_module = {
-    base_url = "git::git@github.com:logscale-contrib/terraform-google-gke-addons.git"
-    version  = "?ref=v1.1.1"
-  }
+
 
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
@@ -37,37 +31,28 @@ locals {
   codename = local.environment_vars.locals.codename
 
 }
+
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../"
-}
-dependency "vpc" {
-  config_path = "${get_terragrunt_dir()}/../../network/"
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 
 generate "provider" {
-  path      = "provider_gke.tf"
+  path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-
-provider "helm" {
-  kubernetes {
+provider "kubernetes" {
+  
     host                   = "${dependency.k8s.outputs.kubernetes_endpoint}"
     token = "${dependency.k8s.outputs.client_token}"
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-  }
 }
 EOF
 }
-
 # ---------------------------------------------------------------------------------------------------------------------
 # MODULE PARAMETERS
 # These are the variables we have to pass in to use the module. This defines the parameters that are common across all
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  project_id   = local.project_id
-  region       = local.region
-  cluster_name = "${local.name}-${local.env}-${local.codename}"
-
-
-} 
+  name = "external-dns"
+}

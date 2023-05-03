@@ -10,15 +10,11 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "${local.source_module.base_url}${local.source_module.version}"
+  source = "git::git@github.com:logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v1.4.4"
 }
 
 
 locals {
-  # Expose the base source URL so different versions of the module can be deployed in different environments. This will
-  # be used to construct the terraform block in the child terragrunt configurations.
-  module_vars   = read_terragrunt_config(find_in_parent_folders("modules.hcl"))
-  source_module = local.module_vars.locals.k8s_helm
 
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
@@ -34,7 +30,7 @@ locals {
 
 
 
-  host_name = "logscale-ops"
+  host_name   = "logscale-ops"
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
@@ -45,10 +41,8 @@ locals {
   humio_sso_signOnUrl      = local.humio.locals.humio_sso_signOnUrl
   humio_sso_entityID       = local.humio.locals.humio_sso_entityID
 }
-
-
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../k8s/"
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 dependency "bucket" {
   config_path = "${get_terragrunt_dir()}/../bucket/"
@@ -57,9 +51,8 @@ dependencies {
   paths = [
     "${get_terragrunt_dir()}/../project/",
     "${get_terragrunt_dir()}/../ns/",
-    "${get_terragrunt_dir()}/../cert-ui/",
-    "${get_terragrunt_dir()}/../cert-inputs/",
-    "${get_terragrunt_dir()}/../../../gke-addons/"
+    "${get_terragrunt_dir()}/../cert-gke-inputs/",
+    "${get_terragrunt_dir()}/../cert-gke-ui/"
   ]
 }
 generate "provider" {
@@ -118,7 +111,7 @@ humio:
   # Object Storage Settings
   buckets:
     type: gcp
-    name: ${dependency.bucket.outputs.bucket_name}
+    name: ${dependency.bucket.outputs.name}
 
   #Kafka
   kafka:
