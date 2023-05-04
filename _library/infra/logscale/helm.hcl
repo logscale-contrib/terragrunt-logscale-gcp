@@ -83,7 +83,7 @@ inputs = {
 
   release          = local.codename
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.36"
+  chart_version    = "v7.0.0-next.38"
   namespace        = "${local.name}-${local.codename}"
   create_namespace = false
   project          = "${local.name}-${local.codename}"
@@ -126,7 +126,7 @@ humio:
 
   #Image is shared by all node pools
   image:
-    tag: 1.89.0--SNAPSHOT--build-421995--SHA-39fbe50b07cf74200bcfbecd56ddf29506fa08bb
+    tag: 1.89.0--SNAPSHOT--build-423199--SHA-a5fb8c27a9f860a7d591a8dad518db11522cbb68
   # Primary Node pool used for digest/storage
   nodeCount: 3
   #In general for these node requests and limits should match

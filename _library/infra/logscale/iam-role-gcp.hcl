@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "tfr:///terraform-google-modules/kubernetes-engine/google//modules/workload-identity?version=25.0.0"
+  source = "tfr:///terraform-google-modules/iam/google//modules/custom_role_iam?version=7.6.0"
 }
 
 
@@ -35,6 +35,9 @@ locals {
 }
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
+}
+dependency "sa" {
+  config_path = "${get_terragrunt_dir()}/../sa/"
 }
 dependencies {
   paths = [
@@ -63,8 +66,15 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name                            = "${local.name}-${local.codename}"
-  namespace                       = "${local.name}-${local.codename}"
-  project_id                      = local.project_id
-  automount_service_account_token = true
+  target_level = "project"
+  target_id    = local.project_id
+  role_id      = "${local.name}_${local.codename}_sa"
+  title        = "${local.name}-${local.codename}-sa"
+  description  = "Grants access to signblobs for export"
+  #   base_roles           = ["roles/iam.serviceAccountAdmin"]
+  permissions = ["iam.serviceAccounts.signBlob"]
+  #   excluded_permissions = ["iam.serviceAccounts.setIamPolicy"]
+  members = ["serviceAccount:${dependency.sa.outputs.gcp_service_account_email}"]
+
+
 } 
