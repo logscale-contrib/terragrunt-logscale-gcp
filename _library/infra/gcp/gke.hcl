@@ -60,6 +60,7 @@ inputs = {
   enable_binary_authorization = false
   skip_provisioners           = false
   node_metadata               = "GKE_METADATA"
+  grant_registry_access       = true
   # cluster_autoscaling = {
   #   "auto_repair" : true,
   #   "auto_upgrade" : true,
@@ -129,6 +130,13 @@ inputs = {
     compute = {
       workloadClass = "compute"
     }
+  }
+
+  node_pools_oauth_scopes = {
+    "all" : [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/devstorage.read_only"
+    ]
   }
 
   # node_pools_taints = {
