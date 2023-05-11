@@ -10,13 +10,13 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "tfr:///terraform-module/release/helm?version=2.8.0"
+  source = "git::git@github.com:logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v1.4.4"
 }
 
-# ---------------------------------------------------------------------------------------------------------------------
-# Locals are named constants that are reusable within the configuration.
-# ---------------------------------------------------------------------------------------------------------------------
+
 locals {
+  # Expose the base source URL so different versions of the module can be deployed in different environments. This will
+  # be used to construct the terraform block in the child terragrunt configurations.
 
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
@@ -30,11 +30,8 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
-
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
-
-  host_name = "argocd"
 
 }
 
@@ -42,25 +39,24 @@ locals {
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
+
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../ns/"
+    "${get_terragrunt_dir()}/../../common/project/"
   ]
 }
 generate "provider" {
-  path      = "provider_gke.tf"
+  path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-
-provider "helm" {
-  kubernetes {
+provider "kubernetes" {
+  
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       args        = []
       command     = "gke-gcloud-auth-plugin"
-    }
   }
 }
 EOF
@@ -71,65 +67,23 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  namespace  = "argocd"
-  repository = "https://argoproj.github.io/argo-helm"
+  uniqueName = "${local.name}-${local.codename}"
 
-  app = {
-    name             = "cw"
-    create_namespace = true
+  repository = "https://kube-logging.github.io/helm-charts"
 
-    chart   = "argo-cd"
-    version = "5.32.1"
+  release          = local.codename
+  chart            = "logging-operator"
+  chart_version    = "4.1.0"
+  namespace        =  "logging-operator"
+  create_namespace = false
+  project          = "common"
+  skipCrds = false
 
-    wait   = true
-    deploy = 1
-  }
-  values = [<<EOF
-createAggregateRoles: true
-argo-cd:
-  config:
-    application.resourceTrackingMethod: annotation+label
-redis-ha:
-  enabled: true
+  values = yamldecode(<<EOF
+noop: true
+EOF
+  )
 
-controller:
-  replicas: 2
-
-repoServer:
-  autoscaling:
-    enabled: true
-    minReplicas: 2
-
-applicationSet:
-  replicas: 2
-
-server:
-  autoscaling:
-    enabled: true
-    minReplicas: 2
-  extraArgs:
-  - --insecure
-  service:
-    annotations:
-      cloud.google.com/neg: '{"ingress": true}' # Creates a NEG after an Ingress is created
-  ingress:
-    enabled: true
-    hosts:
-      - ${local.host_name}.${local.domain_name}
-    annotations:
-      external-dns.alpha.kubernetes.io/hostname: ${local.host_name}.${local.domain_name}
-      networking.gke.io/managed-certificates: cert-google-gke-managed-cert
-global:
-  logging:
-    # -- Set the global logging format. Either: `text` or `json`
-    format: json
-  topologySpreadConstraints: 
-    - maxSkew: 1
-      topologyKey: topology.kubernetes.io/zone
-      whenUnsatisfiable: DoNotSchedule    
-configs:
-  url: ${local.host_name}.${local.domain_name}
-
-EOF 
+  ignoreDifferences = [
   ]
 }

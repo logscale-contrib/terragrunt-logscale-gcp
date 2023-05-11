@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::git@github.com:logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v1.4.4"
+  source = "git::git@github.com:logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.0.1"
 }
 
 
@@ -83,11 +83,12 @@ inputs = {
 
   release          = local.codename
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.39"
+  chart_version    = "v7.0.0-next.47"
   namespace        = "${local.name}-${local.codename}"
   create_namespace = false
   project          = "${local.name}-${local.codename}"
 
+  server_side_apply = false
 
   values = yamldecode(<<EOF
 platform: gcp
@@ -475,17 +476,17 @@ zookeeper:
     size: 10Gi
     class: premium-rwo
 
-otel:  
-  components:
-    inject: true
-    app: true
-    cluster: true
-    nodes: true
-    logScaleConfig: true
-    serviceaccount: true
-  resourcedetectors:
-    - env
-    - gcp
+# otel:  
+#   components:
+#     inject: true
+#     app: true
+#     cluster: true
+#     nodes: true
+#     logScaleConfig: true
+#     serviceaccount: true
+#   resourcedetectors:
+#     - env
+#     - gcp
 EOF
   )
 
