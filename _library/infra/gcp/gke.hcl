@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "tfr:///terraform-google-modules/kubernetes-engine/google?version=25.0.0"
+  source = "git::https://github.com/logscale-contrib/terraform-google-kubernetes-engine.git?ref=new-nvme"
 }
 
 
@@ -78,7 +78,7 @@ inputs = {
       name         = "general"
       machine_type = "n2-standard-2"
       min_count    = 0
-      max_count    = 1
+      max_count    = 3
       # service_account = format("%s@%s.iam.gserviceaccount.com", local.cluster_sa_name, var.project_id)
       auto_upgrade = true
       auto_repair  = true
@@ -87,9 +87,25 @@ inputs = {
     {
       name         = "compute"
       machine_type = "c2-standard-8"
-      min_count    = 1
+      min_count    = 0
       max_count    = 3
       # local_ssd_count    = 0
+      # disk_size_gb       = 30
+      # disk_type          = "pd-standard"
+      # accelerator_count  = 1
+      # accelerator_type   = "nvidia-tesla-a100"
+      # gpu_partition_size = "1g.5gb"
+      auto_upgrade = true
+      auto_repair  = true
+      autoscaling  = true
+      # service_account = module.service_accounts.email
+    },
+    {
+      name                                        = "nvme"
+      machine_type                                = "c2-standard-8"
+      min_count                                   = 0
+      max_count                                   = 3
+      local_nvme_ssd_block_config_local_ssd_count = 1
       # disk_size_gb       = 30
       # disk_type          = "pd-standard"
       # accelerator_count  = 1
@@ -139,22 +155,15 @@ inputs = {
     ]
   }
 
-  # node_pools_taints = {
-  #   all = [
-  #     {
-  #       key    = "all-pools-example"
-  #       value  = true
-  #       effect = "PREFER_NO_SCHEDULE"
-  #     },
-  #   ]
-  #   pool-01 = [
-  #     {
-  #       key    = "pool-01-example"
-  #       value  = true
-  #       effect = "PREFER_NO_SCHEDULE"
-  #     },
-  #   ]
-  # }
+  node_pools_taints = {
+    nvme = [
+      {
+        key    = "nvme"
+        value  = true
+        effect = "PREFER_NO_SCHEDULE"
+      },
+    ]
+  }
 
   # node_pools_tags = {
   #   all = [

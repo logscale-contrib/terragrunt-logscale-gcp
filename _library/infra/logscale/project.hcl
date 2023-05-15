@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::git@github.com:logscale-contrib/terraform-kubernetes-argocd-project.git"
+  source = "git::https://github.com/logscale-contrib/terraform-kubernetes-argocd-project.git"
 }
 # ---------------------------------------------------------------------------------------------------------------------
 # Locals are named constants that are reusable within the configuration.
@@ -43,7 +43,7 @@ dependencies {
 }
 
 
-generate "provider" {
+generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF

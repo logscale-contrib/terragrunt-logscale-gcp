@@ -33,7 +33,7 @@ locals {
 
 
 
-generate "provider" {
+generate "provider_gcp" {
   path      = "provider_gcp.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<-EOF

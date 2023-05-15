@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::git@github.com:logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v1.4.4"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.1.0"
 }
 
 
@@ -45,7 +45,7 @@ dependencies {
     "${get_terragrunt_dir()}/../helm/"
   ]
 }
-generate "provider" {
+generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
@@ -74,7 +74,7 @@ inputs = {
   release          = local.codename
   chart            = "logging-operator-logging"
   chart_version    = "4.1.0"
-  namespace        =  "logscale-ops"
+  namespace        = "logscale-ops"
   create_namespace = false
   project          = "common"
 
@@ -121,7 +121,8 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cwd.cid: "244466666888888899999999"    
+            - cwd.cid: "244466666888888899999999"
+            - cluster_name: ${local.name}-${local.env}-${local.codename}
       match:
       - select:
           labels:
@@ -136,6 +137,7 @@ clusterFlows:
         - record_transformer:
             records:
             - cwd.cid: "244466666888888899999999"    
+            - cluster_name: ${local.name}-${local.env}-${local.codename}
       match:
       - select:
           labels:
@@ -150,6 +152,7 @@ clusterFlows:
         - record_transformer:
             records:
             - cwd.cid: "244466666888888899999999"    
+            - cluster_name: ${local.name}-${local.env}-${local.codename}
       match:
       - select:
           namespaces:
@@ -186,6 +189,7 @@ clusterFlows:
         - record_transformer:
             records:
             - cwd.cid: "244466666888888899999999"    
+            - cluster_name: ${local.name}-${local.env}-${local.codename}   
       match:
       - exclude:
           namespaces:

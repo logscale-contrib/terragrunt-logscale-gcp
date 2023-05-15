@@ -47,7 +47,7 @@ dependencies {
   ]
 }
 
-generate "provider" {
+generate "provider_gke" {
   path      = "provider_gke.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF

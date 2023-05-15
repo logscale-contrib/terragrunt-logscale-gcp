@@ -44,7 +44,7 @@ dependencies {
     "${get_terragrunt_dir()}/../ns/"
   ]
 }
-generate "provider" {
+generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF

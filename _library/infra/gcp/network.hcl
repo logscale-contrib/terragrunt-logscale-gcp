@@ -45,6 +45,8 @@ inputs = {
   network_name = "${local.name}-${local.env}-${local.codename}"
   routing_mode = "GLOBAL"
   project_id   = local.project_id
+
+  mtu = 8896
   subnets = [
     {
       subnet_name   = "k8s"
@@ -79,30 +81,3 @@ inputs = {
   }
 
 }
-#   name_suffix = "${local.name}-${local.env}-${local.codename}"
-#   ip_ranges = {
-#     private_primary    = "10.0.2.0/23"
-#     private_g_services = "10.0.0.0/23"
-#     proxy_only         = ""
-#     private_k8s = [
-#       {
-#         pods_rname = "pods",
-#         pods_cidr  = "10.0.4.0/23",
-#         svcs_rname = "svc",
-#         svcs_cidr  = "10.0.6.0/23"
-#       }
-#     ]
-#     private_redis     = []
-#     serverless_access = []
-#   }
-
-#   # enable_ipv6                     = true
-#   # assign_ipv6_address_on_creation = true
-
-#   # private_subnet_assign_ipv6_address_on_creation = true
-
-#   # public_subnet_ipv6_prefixes  = [0, 1, 2]
-#   # private_subnet_ipv6_prefixes = [3, 4, 5]
-
-
-# }

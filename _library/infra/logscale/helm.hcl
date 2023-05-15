@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::git@github.com:logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.0.1"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.1.0"
 }
 
 
@@ -52,10 +52,13 @@ dependencies {
     "${get_terragrunt_dir()}/../project/",
     "${get_terragrunt_dir()}/../ns/",
     "${get_terragrunt_dir()}/../cert-gke-inputs/",
-    "${get_terragrunt_dir()}/../cert-gke-ui/"
+    "${get_terragrunt_dir()}/../cert-gke-ui/",
+    "${get_terragrunt_dir()}/../../logscale-operator/helm/",
+    "${get_terragrunt_dir()}/../../strimzi-operator/helm/",
+    "${get_terragrunt_dir()}/../../otel-operator/helm/"
   ]
 }
-generate "provider" {
+generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
@@ -83,7 +86,7 @@ inputs = {
 
   release          = local.codename
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.47"
+  chart_version    = "v7.0.0-next.48"
   namespace        = "${local.name}-${local.codename}"
   create_namespace = false
   project          = "${local.name}-${local.codename}"

@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "tfr:///terraform-google-modules/kubernetes-engine/google//modules/workload-identity?version=25.0.0"
+  source = "tfr:///terraform-google-modules/kubernetes-engine/google//modules/workload-identity?version=26.0.0"
 }
 
 
@@ -41,7 +41,7 @@ dependencies {
     "${get_terragrunt_dir()}/../ns/"
   ]
 }
-generate "provider" {
+generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF

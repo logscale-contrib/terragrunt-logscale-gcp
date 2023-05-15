@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::git@github.com:logscale-contrib/terraform-k8s-namespace.git?ref=v1.0.0"
+  source = "git::https://github.com/logscale-contrib/terraform-k8s-namespace.git?ref=v1.0.1"
 }
 # ---------------------------------------------------------------------------------------------------------------------
 # Locals are named constants that are reusable within the configuration.
@@ -35,7 +35,7 @@ dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 
-generate "provider" {
+generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF

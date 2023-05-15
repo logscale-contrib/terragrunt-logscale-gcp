@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "tfr:///terraform-google-modules/kubernetes-engine/google//modules/workload-identity?version=25.0.0"
+  source = "tfr:///terraform-google-modules/kubernetes-engine/google//modules/workload-identity?version=26.0.0"
 }
 
 
@@ -41,7 +41,23 @@ dependencies {
     "${get_terragrunt_dir()}/../ns/"
   ]
 }
-generate "provider" {
+
+generate "provider_gcp" {
+  path      = "provider_gcp.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<-EOF
+provider "google" {
+  project     = "${local.project_id}"
+  region = "${local.region}"
+}
+provider "google-beta" {
+  project     = "${local.project_id}"
+  region = "${local.region}"
+}  
+  EOF
+}
+
+generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF

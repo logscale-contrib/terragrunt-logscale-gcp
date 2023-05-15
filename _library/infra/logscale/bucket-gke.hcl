@@ -47,6 +47,14 @@ inputs = {
   location   = local.region
 
   versioning = true
+  lifecycle_rules = [
+    {
+      "action" : { "type" : "Delete" },
+      "condition" : {
+        "daysSinceNoncurrentTime" : 2
+      }
+    }    
+  ]
   iam_members = [
     {
       role   = "roles/storage.objectAdmin"

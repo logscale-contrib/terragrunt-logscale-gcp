@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::git@github.com:logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v1.4.4"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.1.0"
 }
 
 
@@ -46,7 +46,7 @@ dependencies {
     "${get_terragrunt_dir()}/../ns/"
   ]
 }
-generate "provider" {
+generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF

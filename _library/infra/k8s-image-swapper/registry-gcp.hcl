@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "git::git@github.com:logscale-contrib/terraform-google-registry.git?ref=v1.0.0"
+  source = "git::https://github.com/logscale-contrib/terraform-google-registry.git?ref=v1.0.1"
 }
 
 
@@ -36,22 +36,7 @@ locals {
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
-generate "provider" {
-  path      = "provider_k8s.tf"
-  if_exists = "overwrite_terragrunt"
-  contents  = <<EOF
-provider "kubernetes" {
-  
-    host                   = "https://${dependency.k8s.outputs.endpoint}"    
-    cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = []
-      command     = "gke-gcloud-auth-plugin"
-  }
-}
-EOF
-}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # MODULE PARAMETERS
 # These are the variables we have to pass in to use the module. This defines the parameters that are common across all
