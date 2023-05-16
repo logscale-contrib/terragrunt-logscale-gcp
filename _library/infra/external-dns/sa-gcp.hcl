@@ -64,7 +64,7 @@ EOF
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
   source                          = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
-  name                            = "external-dns"
+  name                            = "external-dns-${local.name}-${local.codename}"
   namespace                       = "external-dns"
   project_id                      = local.project_id
   roles                           = ["roles/dns.admin"]

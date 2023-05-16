@@ -62,7 +62,7 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name        = "common"
+  name        = "${local.name}-${local.env}-${local.codename}-common"
   namespace   = "argocd"
   description = "Used for cluster wide resources"
   repository  = "https://argoproj.github.io/argo-helm"

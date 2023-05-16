@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.1.0"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
 
 
@@ -33,11 +33,14 @@ locals {
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
+  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
+
 }
 
 dependencies {
@@ -69,6 +72,8 @@ EOF
 inputs = {
   uniqueName = "${local.name}-${local.codename}"
 
+  destination_name = local.destination_name
+
   repository = "https://humio.github.io/humio-operator"
 
   release          = local.codename
@@ -76,7 +81,7 @@ inputs = {
   chart_version    = "0.18.*"
   namespace        = "logscale-operator"
   create_namespace = false
-  project          = "common"
+  project          = "${local.name}-${local.env}-${local.codename}-common"
   skipCrds         = false
 
 

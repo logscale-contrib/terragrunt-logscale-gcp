@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.1.0"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -49,14 +49,15 @@ locals {
   humio_sso_idpCertificate = local.humio.locals.humio_sso_idpCertificate
   humio_sso_signOnUrl      = local.humio.locals.humio_sso_signOnUrl
   humio_sso_entityID       = local.humio.locals.humio_sso_entityID
+
+  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+
 }
 
 
 dependency "eks" {
-  config_path = "${get_terragrunt_dir()}/../../../../eks/"
-}
-dependency "acm_ui" {
-  config_path = "${get_terragrunt_dir()}/../../../../acm-ui/"
+  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
+
 }
 dependency "bucket" {
   config_path = "${get_terragrunt_dir()}/../bucket/"
@@ -97,6 +98,8 @@ EOF
 inputs = {
   uniqueName = "${local.name}-${local.codename}"
 
+  destination_name = local.destination_name
+
   repository = "https://ot-container-kit.github.io/helm-charts/"
 
   release          = "${local.codename}-redis"
@@ -104,7 +107,7 @@ inputs = {
   chart_version    = "0.14.3"
   namespace        = "${local.name}-${local.codename}"
   create_namespace = false
-  project          = "${local.name}-${local.codename}"
+  project          = "${local.name}-${local.env}-${local.codename}-logscale"
 
 
   values = yamldecode(<<EOF

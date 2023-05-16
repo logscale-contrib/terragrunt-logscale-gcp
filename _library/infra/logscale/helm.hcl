@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.1.0"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
 
 
@@ -40,9 +40,13 @@ locals {
   humio_sso_idpCertificate = local.humio.locals.humio_sso_idpCertificate
   humio_sso_signOnUrl      = local.humio.locals.humio_sso_signOnUrl
   humio_sso_entityID       = local.humio.locals.humio_sso_entityID
+
+  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+
 }
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
+
 }
 dependency "bucket" {
   config_path = "${get_terragrunt_dir()}/../bucket/"
@@ -82,6 +86,8 @@ EOF
 inputs = {
   uniqueName = "${local.name}-${local.codename}"
 
+  destination_name = local.destination_name
+
   repository = "https://logscale-contrib.github.io/helm-logscale"
 
   release          = local.codename
@@ -89,7 +95,7 @@ inputs = {
   chart_version    = "v7.0.0-next.48"
   namespace        = "${local.name}-${local.codename}"
   create_namespace = false
-  project          = "${local.name}-${local.codename}"
+  project          = "${local.name}-${local.env}-${local.codename}-logscale"
 
   server_side_apply = false
 
@@ -126,6 +132,7 @@ humio:
     manager: strimzi
     prefixEnable: true
     strimziCluster: "${local.codename}-logscale"
+    topicPrefix: ops
     # externalKafkaHostname: "${local.codename}-logscale-kafka-bootstrap:9092"
 
   #Image is shared by all node pools

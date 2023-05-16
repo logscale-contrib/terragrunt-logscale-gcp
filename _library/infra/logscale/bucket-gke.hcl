@@ -53,7 +53,7 @@ inputs = {
       "condition" : {
         "daysSinceNoncurrentTime" : 2
       }
-    }    
+    }
   ]
   iam_members = [
     {

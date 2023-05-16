@@ -64,7 +64,7 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name                            = "k8s-image-swapper"
+  name                            = "k8s-image-swapper-${local.name}-${local.codename}"
   namespace                       = "k8s-image-swapper"
   project_id                      = local.project_id
   roles                           = ["roles/artifactregistry.writer", "roles/artifactregistry.reader"]

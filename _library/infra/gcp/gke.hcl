@@ -160,7 +160,7 @@ inputs = {
       {
         key    = "nvme"
         value  = true
-        effect = "PREFER_NO_SCHEDULE"
+        effect = "NO_SCHEDULE"
       },
     ]
   }
