@@ -141,7 +141,7 @@ clusterFlows:
           labels:
             app.kubernetes.io/name: host-tailer
           namespaces:
-            - logscale-ops
+            - logging
       globalOutputRefs:
         - logscale-infra-host
   - name: k8s-infra-events
@@ -156,7 +156,7 @@ clusterFlows:
           labels:
             app.kubernetes.io/name: event-tailer
           namespaces:
-            - logscale-ops
+            - logging
       globalOutputRefs:
         - logscale-infra-event
   - name: k8s-infra-pods
@@ -167,6 +167,16 @@ clusterFlows:
             - cwd.cid: "244466666888888899999999"    
             - cluster_name: ${local.name}-${local.env}-${local.codename}
       match:
+      - exclude:
+          labels:
+            app.kubernetes.io/name: event-tailer
+          namespaces:
+            - logging
+      - exclude:
+          labels:
+            app.kubernetes.io/name: host-tailer
+          namespaces:
+            - logging          
       - select:
           namespaces:
             - argocd
@@ -231,16 +241,7 @@ clusterFlows:
       - exclude:
           namespaces:
             - monitoring
-      - exclude:
-          labels:
-            app.kubernetes.io/name: event-tailer
-          namespaces:
-            - logscale-ops
-      - exclude:
-          labels:
-            app.kubernetes.io/name: host-tailer
-          namespaces:
-            - logscale-ops            
+        
       - select: {}
       globalOutputRefs:
         - logscale-app-pod
