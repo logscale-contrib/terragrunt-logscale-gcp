@@ -79,7 +79,7 @@ inputs = {
 
   release          = "${local.codename}-content"
   chart            = "logscale-content"
-  chart_version    = "1.2.2"
+  chart_version    = "1.3.1"
   namespace        = "logscale-ops"
   create_namespace = false
   project          = "${local.name}-${local.env}-${local.codename}-logscale"
@@ -92,6 +92,10 @@ repositoryDefault:
   storageSizeInGB: "1073741824"
   timeInDays: "9999"
   allowDataDeletion: false
+eso:
+  secretStoreRefs:
+    - name: global
+      kind: ClusterSecretStore  
 repositories:
   - name: iaas-google-cloud
   - name: apps-kubernetes
@@ -164,6 +168,8 @@ repositories:
     ingestTokens:
       - name: cluster-local-pod
         parserName: kube-logging-pod
+        eso:
+          push: true        
   - name: infra-kubernetes
     parsers:
       - name: kube-logging-event
@@ -236,10 +242,16 @@ repositories:
     ingestTokens:
       - name: cluster-local-event
         parserName: kube-logging-event
+        eso:
+          push: true        
       - name: cluster-local-host
         parserName: kube-logging-host
+        eso:
+          push: true        
       - name: cluster-local-pod
         parserName: kube-logging-pod
+        eso:
+          push: true        
 EOF
   )
 
