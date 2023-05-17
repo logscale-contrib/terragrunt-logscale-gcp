@@ -153,6 +153,8 @@ repositories:
           - "@type"
           - kind
           - vhost
+          - cluster_name
+          - cwd.cid
           - kubernetes.namespace_name
           - kubernetes.labels.app.kubernetes.io_name
           - kubernetes.labels.app.kubernetes.io_part_of
@@ -184,6 +186,8 @@ repositories:
               {"stream":"stdout","logtag":"F","message":"{\"verb\":\"ADDED\",\"event\":{\"metadata\":{\"name\":\"ops-logscale-setroot-mr4wk.175e203bea844053\",\"namespace\":\"logscale-ops\",\"uid\":\"57544ced-af46-40cc-a38f-893784212f6a\",\"resourceVersion\":\"614008\",\"creationTimestamp\":\"2023-05-11T15:25:52Z\",\"managedFields\":[{\"manager\":\"kubelet\",\"operation\":\"Update\",\"apiVersion\":\"v1\",\"time\":\"2023-05-11T15:25:52Z\"}]},\"involvedObject\":{\"kind\":\"Pod\",\"namespace\":\"logscale-ops\",\"name\":\"ops-logscale-setroot-mr4wk\",\"uid\":\"5f5e47f4-35f0-4136-bf7d-cab6c06009dd\",\"apiVersion\":\"v1\",\"resourceVersion\":\"16970179\",\"fieldPath\":\"spec.containers{humio-set-root}\"},\"reason\":\"Created\",\"message\":\"Created container humio-set-root\",\"source\":{\"component\":\"kubelet\",\"host\":\"gke-logscale-prod-ops-compute-d3b0b3f1-n72x\"},\"firstTimestamp\":\"2023-05-11T15:25:52Z\",\"lastTimestamp\":\"2023-05-11T15:25:52Z\",\"count\":1,\"type\":\"Normal\",\"eventTime\":null,\"reportingComponent\":\"\",\"reportingInstance\":\"\"}}","kubernetes":{"pod_name":"ops-event-tailer-0","namespace_name":"logscale-ops","pod_id":"ff0a3bf6-3392-464b-a34a-065989ed2dda","labels":{"app.kubernetes.io/instance":"ops-event-tailer","app.kubernetes.io/name":"event-tailer","controller-revision-hash":"ops-event-tailer-795565f5fc","statefulset.kubernetes.io/pod-name":"ops-event-tailer-0"},"host":"gke-logscale-prod-ops-compute-44fb8724-6nz5","container_name":"event-tailer","docker_id":"9fc97b0099f1699c7ee5b852951d70e9f8093f38b1557452a9b72de8fedbc12a","container_hash":"us-central1-docker.pkg.dev/logsr-life-production/logscale-prod-ops/docker.io/banzaicloud/eventrouter@sha256:6353d3f961a368d95583758fa05e8f4c0801881c39ed695bd4e8283d373a4262","container_image":"us-central1-docker.pkg.dev/logsr-life-production/logscale-prod-ops/docker.io/banzaicloud/eventrouter:v0.1.0"},"cwd.cid":"244466666888888899999999"}
         tagFields:
           - "@type"
+          - cluster_name
+          - cwd.cid
           - event.involvedObject.kind
           - event.involvedObject.name
           - event.involvedObject.namespace
@@ -202,6 +206,8 @@ repositories:
         tagFields:
           - "@type"
           - "@host"
+          - cluster_name
+          - cwd.cid
           - "_SYSTEMD_UNIT"
       - name: kube-logging-pod
         parserScript: |
@@ -232,8 +238,8 @@ repositories:
               {"stream":"stderr","logtag":"F","message":"{\"level\":\"info\",\"ts\":\"2023-05-08T11:54:36.701998152Z\",\"caller\":\"controllers/humiocluster_pod_status.go:106\",\"func\":\"github.com/humio/humio-operator/controllers.(*HumioClusterReconciler).getPodsStatus\",\"msg\":\"pod status readyCount=3 notReadyCount=0 podsReady=[ops-logscale-core-zvpuwy ops-logscale-core-ndztkg ops-logscale-core-uupmaq] podsNotReady=[]\",\"Operator.Commit\":\"58aaa7326f32e96a85bda10acfce95fb86509bce\",\"Operator.Date\":\"2023-04-06T15:23:58+00:00\",\"Operator.Version\":\"0.18.0\",\"Request.Namespace\":\"logscale-ops\",\"Request.Name\":\"ops-logscale\",\"Request.Type\":\"HumioClusterReconciler\",\"Reconcile.ID\":\"nbluea\"}","kubernetes":{"pod_name":"ops-678d8cd7bc-z72r5","namespace_name":"logscale-operator","pod_id":"5fe1b843-01ec-4d29-bfb7-796665c76f97","labels":{"app":"humio-operator","app.kubernetes.io/instance":"ops","app.kubernetes.io/managed-by":"Helm","app.kubernetes.io/name":"humio-operator","helm.sh/chart":"humio-operator-0.18.0","pod-template-hash":"678d8cd7bc"},"annotations":{"productID":"none","productName":"humio-operator","productVersion":"0.18.0"},"host":"gke-logscale-prod-ops-compute-44fb8724-0pzt","container_name":"humio-operator","docker_id":"0e5bae5bd0edc93a1281131aebf3ccaa56926f3cd2b9fd969f104bfb4e549ef8","container_hash":"docker.io/humio/humio-operator@sha256:f78a981d3bdbffddd097a7395f859eb6d2ffebfd0345c96b4385c8b5ec3eab1c","container_image":"docker.io/humio/humio-operator:0.18.0"}}
         tagFields:
           - "@type"
-          - kind
-          - vhost
+          - cluster_name
+          - cwd.cid
           - kubernetes.namespace_name
           - kubernetes.labels.app.kubernetes.io_name
           - kubernetes.labels.app.kubernetes.io_part_of

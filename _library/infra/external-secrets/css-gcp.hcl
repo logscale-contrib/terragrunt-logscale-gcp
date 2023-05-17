@@ -39,8 +39,7 @@ locals {
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
-
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 
 dependencies {
