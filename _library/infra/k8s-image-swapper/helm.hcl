@@ -121,6 +121,13 @@ patch:
   enabled: false
 certmanager:
   enabled: true
+resources:
+  requests: 
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi  
 EOF
   )
 

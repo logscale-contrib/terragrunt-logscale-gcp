@@ -88,10 +88,10 @@ inputs = {
 watchAnyNamespace: true
 resources:
   requests:
-    cpu: 200m
-    memory: 512Mi
+    cpu: 50m
+    memory: 384Mi
   limits:
-    cpu: 1000m
+    cpu: "500m"
     memory: 512Mi
 topologySpreadConstraints:
   - maxSkew: 1

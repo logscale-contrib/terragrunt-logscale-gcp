@@ -101,11 +101,11 @@ tolerations:
     operator: Exists
 resources:
   requests: 
-    cpu: 250m
-    memory: 256Mi
+    cpu: 50m
+    memory: 50Mi
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 250m
+    memory: 96Mi
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:

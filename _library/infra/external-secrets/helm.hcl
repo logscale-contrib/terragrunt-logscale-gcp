@@ -95,11 +95,11 @@ tolerations:
     operator: Exists
 resources:
   requests: 
-    cpu: 250m
-    memory: 256Mi
+    cpu: 50m
+    memory: 50Mi
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 250m
+    memory: 64Mi
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
@@ -119,7 +119,22 @@ serviceAccount:
   create: false
   automount: true
   name: external-secrets-${local.name}-${local.codename}
-
+certController:
+  resources:
+    requests: 
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+webhook:
+  resources:
+    requests: 
+      cpu: 100m
+      memory: 50Mi
+    limits:
+      cpu: "250m"
+      memory: 100Mi
 EOF
   )
 

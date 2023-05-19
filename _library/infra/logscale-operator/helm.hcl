@@ -88,11 +88,11 @@ inputs = {
   values = yamldecode(<<EOF
 resources:
   requests:
-    cpu: 200m
-    memory: 512Mi
+    cpu: 250m
+    memory: 64Mi
   limits:
-    cpu: 1000m
-    memory: 512Mi    
+    cpu: 500m
+    memory: 128Mi    
 prometheus:
   serviceMonitor:
     enabled: true  

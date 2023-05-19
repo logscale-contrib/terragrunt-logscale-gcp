@@ -35,14 +35,14 @@ locals {
 
   destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
 
-#ops-logscale-http-only.logscale-ops.svc.cluster.local
-        # insecure_ssl: ${local.inputs.insecure_ssl}
-        # protocol: ${local.inputs.protocol}
-        # hec_port: ${local.inputs.port}
-  inputs_url = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "ops-logscale-http-only.logscale-ops.svc.cluster.local" : "logscale-ops-inputs.${local.domain_name}"
+  #ops-logscale-http-only.logscale-ops.svc.cluster.local
+  # insecure_ssl: ${local.inputs.insecure_ssl}
+  # protocol: ${local.inputs.protocol}
+  # hec_port: ${local.inputs.port}
+  inputs_url   = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "ops-logscale-http-only.logscale-ops.svc.cluster.local" : "logscale-ops-inputs.${local.domain_name}"
   insecure_ssl = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? true : false
-  protocol = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "http" : "https"
-  hec_port = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "8080" : "443"
+  protocol     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "http" : "https"
+  hec_port     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "8080" : "443"
 }
 
 
@@ -98,6 +98,13 @@ controlNamespace: logging
 # -- EventTailer config
 eventTailer: 
   name: ops
+  resources:
+    limits:
+      cpu: 200m
+      memory: 100M
+    requests:
+      cpu: 100m
+      memory: 50M
   # pvc:
   #   accessModes:
   #     - ReadWriteOnce
@@ -108,6 +115,13 @@ eventTailer:
 # -- HostTailer config
 hostTailer:
   name: ops
+  resources:
+    limits:
+      cpu: 200m
+      memory: 100M
+    requests:
+      cpu: 100m
+      memory: 50M
   systemdTailers:
     - name: host-tailer-systemd-kubelet
       disabled: false
@@ -309,19 +323,19 @@ clusterOutputs:
 fluentbit:
   resources:
     limits:
-      cpu: 200m
+      cpu: 250m
       memory: 100M
     requests:
-      cpu: 100m
-      memory: 50M
+      cpu: 50m
+      memory: 25M
 fluentd:
   resources:
     limits:
-      cpu: 1000m
+      cpu: "500m"
       memory: 400M
     requests:
-      cpu: 500m
-      memory:  100M  
+      cpu: 100m
+      memory:  200M  
 EOF
   )
 

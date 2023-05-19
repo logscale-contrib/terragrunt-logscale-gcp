@@ -30,11 +30,15 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
+  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+
 }
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
+
 }
+
 dependencies {
   paths = [
     "${get_terragrunt_dir()}/../../argocd/helm/"
@@ -69,8 +73,8 @@ inputs = {
 
   destinations = [
     {
-      server    = "https://kubernetes.default.svc"
-      name      = "in-cluster"
+      server    = "*"
+      name      = local.destination_name
       namespace = "*"
     }
   ]

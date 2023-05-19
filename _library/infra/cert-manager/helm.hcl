@@ -75,7 +75,7 @@ inputs = {
 
   release          = local.codename
   chart            = "cert-manager"
-  chart_version    = "1.9.*"
+  chart_version    = "1.11.2"
   namespace        = "cert-manager"
   create_namespace = false
   project          = "${local.name}-${local.env}-${local.codename}-common"
@@ -90,15 +90,17 @@ topologySpreadConstraints:
 tolerations:
   - key: CriticalAddonsOnly
     operator: Exists
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "256Mi"
+    cpu: "250m"
 
-    
 installCRDs: true
 
 replicaCount: 2
-webhook:
-  replicaCount: 2
-cainjector:
-  replicaCount: 2
 serviceAccount:
   create: true
 
@@ -111,8 +113,27 @@ prometheus:
   servicemonitor:
     enabled: true
 
+cainjector:
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "20m"
+    limits:
+      memory: "384Mi"
+      cpu: "150m"    
+  replicaCount: 2
+
 webhook:
-    securePort: 8443
+  resources:
+    requests:
+      memory: "24Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "250m"    
+  replicaCount: 2
+  securePort: 8443
+
 EOF
   )
 

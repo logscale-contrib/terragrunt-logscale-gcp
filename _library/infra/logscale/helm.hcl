@@ -143,11 +143,11 @@ humio:
   #In general for these node requests and limits should match
   resources:
     requests:
-      memory: 8Gi
-      cpu: 2
+      memory: 5Gi
+      cpu: 500m
     limits:
       memory: 8Gi
-      cpu: 3
+      cpu: 2
 
   digestPartitionsCount: 24
   storagePartitionsCount: 6
@@ -157,9 +157,9 @@ humio:
     name: "logscale-${local.codename}"
       
   tolerations:
-    - key: "workloadClass"
+    - key: "computeClass"
       operator: "Equal"
-      value: "nvme"
+      value: "compute"
       effect: "NoSchedule"
     - key: "node.kubernetes.io/disk-pressure"
       operator: "Exists"
@@ -176,7 +176,7 @@ humio:
               - key: "kubernetes.io/os"
                 operator: "In"
                 values: ["linux"]  
-              - key: "workloadClass"
+              - key: "computeClass"
                 operator: "In"
                 values: ["compute"]      
           - matchExpressions:
@@ -243,20 +243,20 @@ humio:
       nodeCount: 3
       resources:
         limits:
-          cpu: "2"
-          memory: 6Gi
+          cpu: "500m"
+          memory: 3Gi
         requests:
-          cpu: "2"
-          memory: 4Gi
+          cpu: "100m"
+          memory: 1500Mi
       tolerations:
-        - key: "workloadClass"
+        - key: "computeClass"
           operator: "Equal"
           value: "compute"
           effect: "NoSchedule"      
-        - key: "workloadClass"
-          operator: "Equal"
-          value: "nvme"
-          effect: "NoSchedule"
+        # - key: "storageClass"
+        #   operator: "Equal"
+        #   value: "nvme"
+        #   effect: "NoSchedule"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -268,7 +268,7 @@ humio:
                   - key: "kubernetes.io/os"
                     operator: "In"
                     values: ["linux"]  
-                  - key: "workloadClass"
+                  - key: "computeClass"
                     operator: "In"
                     values: ["compute"]               
               - matchExpressions:
@@ -306,20 +306,20 @@ humio:
       nodeCount: 3
       resources:
         limits:
-          cpu: "2"
-          memory: 6Gi
-        requests:
-          cpu: "2"
+          cpu: "1"
           memory: 4Gi
+        requests:
+          cpu: "100m"
+          memory: 2Gi
       tolerations:
-        - key: "workloadClass"
+        - key: "computeClass"
           operator: "Equal"
           value: "compute"
           effect: "NoSchedule"      
-        - key: "workloadClass"
-          operator: "Equal"
-          value: "nvme"
-          effect: "NoSchedule"
+        # - key: "storageClass"
+        #   operator: "Equal"
+        #   value: "nvme"
+        #   effect: "NoSchedule"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -331,7 +331,7 @@ humio:
                   - key: "kubernetes.io/os"
                     operator: "In"
                     values: ["linux"]  
-                  - key: "workloadClass"
+                  - key: "computeClass"
                     operator: "In"
                     values: ["compute"]               
               - matchExpressions:
@@ -378,7 +378,7 @@ kafka:
               - key: "kubernetes.io/os"
                 operator: "In"
                 values: ["linux"]
-              - key: "workloadClass"
+              - key: "computeClass"
                 operator: "In"
                 values: ["compute"]                 
                     
@@ -402,7 +402,7 @@ kafka:
             values:
               - "${local.codename}-logscale-kafka"
   tolerations:
-    - key: "workloadClass"
+    - key: "computeClass"
       operator: "Equal"
       value: "compute"
       effect: "NoSchedule"      
@@ -415,13 +415,13 @@ kafka:
   resources:
     requests:
       # Increase the memory as needed to support more than 5/TB day
-      memory: 4Gi
+      memory: 2500Mi
       #Note the following resources are expected to support 1-3 TB/Day however
       # storage is sized for 1TB/day increase the storage to match the expected load
-      cpu: 2
+      cpu: 100m
     limits:
-      memory: 8Gi
-      cpu: 2
+      memory: 3500Mi
+      cpu: 1
   #(total ingest uncompressed per day / 5 ) * 3 / ReplicaCount
   # ReplicaCount must be odd and greater than 3 should be divisible by AZ
   # Example: 1 TB/Day '1/5*3/3=205' 3 Replcias may not survive a zone failure at peak
@@ -429,7 +429,7 @@ kafka:
   # 100 GB should be the smallest disk used for Kafka this may result in some waste
   storage:
     type: persistent-claim
-    size: 250Gi
+    size: 100Gi
     deleteClaim: true
     #Must be SSD or NVME like storage IOPs is the primary node constraint
     class: premium-rwo
@@ -446,7 +446,7 @@ zookeeper:
               - key: "kubernetes.io/os"
                 operator: "In"
                 values: ["linux"]
-              - key: "workloadClass"
+              - key: "computeClass"
                 operator: "In"
                 values: ["compute"]                 
     # podAntiAffinity:
@@ -469,21 +469,21 @@ zookeeper:
             values:
               - "${local.codename}-logscale-zookeeper"
   tolerations:
-    - key: "workloadClass"
+    - key: "computeClass"
       operator: "Equal"
       value: "compute"
       effect: "NoSchedule"      
   resources:
     requests:
-      memory: 1Gi
-      cpu: "250m"
+      memory: 250Mi
+      cpu: "100m"
     limits:
-      memory: 2Gi
-      cpu: "1"
+      memory: 284Mi
+      cpu: "500m"
   storage:
     deleteClaim: true
     type: persistent-claim
-    size: 10Gi
+    size: 5Gi
     class: premium-rwo
 
 # otel:  

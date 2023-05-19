@@ -99,11 +99,11 @@ manager:
 #     enabled: false
 #   create: false   
   resources:
-    limits:
-      cpu: 100m
-      memory: 128Mi
     requests:
-      cpu: 100m
+      cpu: 50m
+      memory: 50Mi
+    limits:
+      cpu: 250m
       memory: 128Mi
 kubeRBACProxy:
   resources:

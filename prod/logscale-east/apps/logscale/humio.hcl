@@ -1,0 +1,30 @@
+
+
+# Set account-wide variables. These are automatically pulled in to configure the remote state bucket in the root
+# terragrunt.hcl configuration.
+locals {
+  humio_rootUser           = "ryan.faircloth@logsr.life"
+  humio_license            = "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzUxMiJ9.eyJpc09lbSI6ZmFsc2UsImF1ZCI6Ikh1bWlvLWxpY2Vuc2UtY2hlY2siLCJzdWIiOiJDcm93ZFN0cmlrZVBTLVJ5YW5GYWlyY2xvdGgiLCJ1aWQiOiJSZjkxbXdlUDJ2aTE4R1VTIiwibWF4VXNlcnMiOjk5OTk5OSwiYWxsb3dTQUFTIjpmYWxzZSwibWF4Q29yZXMiOjk5OTk5OSwidmFsaWRVbnRpbCI6MTcwMTQzNTYwMCwiZXhwIjoxNzY0NTIzMTk4LCJpc1RyaWFsIjpmYWxzZSwiaWF0IjoxNjY5OTE1MTk4LCJtYXhJbmdlc3RHYlBlckRheSI6OTk5OTk5fQ.AC_tHQpA9uBceX54JhiGPkDbqTx9GNlaBS9vs_HjIE1MKoQ1RzhCW-X7s9psNIWhftD3mrZjABWyNBw5yRqJn4MdALdzNgCaVnx__NGYXG3xdEiuwBPklaZARev3pTJwluRxYrhO4--h1o6lHSjy1g33StQSxF1KY_7hXZg9MfWgOkcF"
+  humio_sso_idpCertificate = <<-EOT
+-----BEGIN CERTIFICATE-----
+MIIC8DCCAdigAwIBAgIQcQTgbHUn/6NAspl88UCfMTANBgkqhkiG9w0BAQsFADA0MTIwMAYDVQQD
+EylNaWNyb3NvZnQgQXp1cmUgRmVkZXJhdGVkIFNTTyBDZXJ0aWZpY2F0ZTAeFw0yMzA1MDEyMDQ0
+MTBaFw0yNjA1MDEyMDQ0MTBaMDQxMjAwBgNVBAMTKU1pY3Jvc29mdCBBenVyZSBGZWRlcmF0ZWQg
+U1NPIENlcnRpZmljYXRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwjqczXZqrEqu
+n3hZG1BSwmgM0UVdnFNpT5LNhCCYNNrg5pOlTg70U9hMjIVPgWK70q6mi7aH8THLx6Gq4IdplELW
+FTg106qpECMYpOpOvGjoLUchJvFo4VPujw3n2tGYAWF/vJcq0kMlYa1PZRUWcNDZKts+suMgiXMv
+Q3lS5LDsJRA+1pzV7ecIdFcwVXOQXLTj7P0w2j4dad5r6tIBNn+5Uj9nYgtQ/UNNHkUw5vdGkSek
+IfQuDvc+GB0OuybG1H1vONQHa5uY0Y+oBpTH55GeQqw+pN21tPnYDNzUGgWTONZBy/DxAzHP/fHF
+3mFFe8t9D8xE7rZBvKkOw60NiQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQCHx3kPWfaQq2KZexET
+3UwqyUxUwUat8FQmd33Qyvj/cjZgPj9qTAaRvLNfzadt70DVftyXqku1K4FqBtn4ZcLl31fK8f5m
+p3Qu6aA7Bbmf5Gl9p9aek7hbXBuDG8nNs5VFC3GNS5N1cgL5YXV+k7vUGxgk02bg5T5l+YeZ3bvx
+C40DjfTmixy329suiiHaFnoJQ1oOq/u79Nk7yB2X2yTU2FmxEZ72k+0JA8jKC/r1vhibQ/TDnrQT
+TxSx7JdzJYwwOgNG9/JwugXHgalk3m8Rr9d/tx23V3vjDSByYc+NFx+vqmTsMfEPg8f9XFWdnvfd
+8pG7vX0VEsZoh3l8xg7S
+-----END CERTIFICATE-----
+
+EOT
+
+  humio_sso_signOnUrl = "https://login.microsoftonline.com/4d40b7e0-fca8-48d9-8fea-3d117a06b2a7/saml2"
+  humio_sso_entityID  = "https://sts.windows.net/4d40b7e0-fca8-48d9-8fea-3d117a06b2a7/"
+}
