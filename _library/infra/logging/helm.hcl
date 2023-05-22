@@ -324,17 +324,17 @@ fluentbit:
   resources:
     limits:
       cpu: 250m
-      memory: 100M
+      memory: 200M
     requests:
       cpu: 50m
-      memory: 25M
+      memory: 100M
 fluentd:
   resources:
     limits:
       cpu: "500m"
       memory: 400M
     requests:
-      cpu: 100m
+      cpu: ".25"
       memory:  200M  
 EOF
   )

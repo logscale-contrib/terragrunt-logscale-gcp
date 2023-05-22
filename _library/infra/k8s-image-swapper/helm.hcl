@@ -96,7 +96,7 @@ serviceAccount:
   name: k8s-image-swapper-${local.name}-${local.codename}
 config:
   dryRun: false
-  logLevel: info
+  logLevel: debug
   logFormat: json
 
   imageCopyPolicy: immediate

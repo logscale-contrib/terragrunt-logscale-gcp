@@ -97,7 +97,7 @@ redis-ha:
   redis:
     resources:
       requests:
-        cpu: "1"
+        cpu: ".5"
         memory: 96Mi
       limits:
         cpu: "2"
@@ -124,7 +124,7 @@ controller:
       memory: 400Mi
     limits:
       cpu: 400m
-      memory: 768Mi
+      memory: 1Gi
 repoServer:
   autoscaling:
     enabled: true
@@ -140,7 +140,7 @@ repoServer:
       memory: 100Mi
     limits:
       cpu: 250m
-      memory: 256Mi
+      memory: 384Mi
 
 applicationSet:
   replicas: 2
