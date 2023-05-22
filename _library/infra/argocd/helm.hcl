@@ -42,9 +42,12 @@ locals {
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
+dependency "sso" {
+   config_path="${get_terragrunt_dir()}/../sso/"
+}
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../ns/"
+    "${get_terragrunt_dir()}/../ns/"   
   ]
 }
 generate "provider_gke" {
@@ -220,53 +223,22 @@ configs:
     url: "https://${local.host_name}.${local.domain_name}"
     oidc.config: |
       name: SSO
-      issuer: https://login.microsoftonline.com/4d40b7e0-fca8-48d9-8fea-3d117a06b2a7/v2.0
-      clientID: d11054a3-14df-4f27-91ff-b71422aa7850
-      clientSecret: Wbs8Q~mbV~JDpNPKeKNEnYzy~uHanVHy~qfiicrq
+      issuer: ${dependency.sso.outputs.issuer}
+      clientID: ${dependency.sso.outputs.application_id}
+      clientSecret: $azuread-oidc:oidc.azure.clientSecret
       requestedIDTokenClaims:
         groups:
             essential: true
       requestedScopes:
         - openid
         - profile
-        - email
-    # dex.config: |
-    #   logger:
-    #     level: debug
-    #     format: json
-    #   connectors:
-    #   - type: saml
-    #     id: saml
-    #     name: SSO
-    #     config:
-    #       entityIssuer: https://${local.host_name}.${local.domain_name}/api/dex/callback
-    #       ssoURL: 
-    #       caData: |
-    #           -----BEGIN CERTIFICATE-----
-    #           MIIC8DCCAdigAwIBAgIQedTQhao7Ya1DKGOVfz6+HDANBgkqhkiG9w0BAQsFADA0MTIwMAYDVQQD
-    #           EylNaWNyb3NvZnQgQXp1cmUgRmVkZXJhdGVkIFNTTyBDZXJ0aWZpY2F0ZTAeFw0yMzA1MTgxNDI4
-    #           MTlaFw0yNjA1MTgxNDI4MThaMDQxMjAwBgNVBAMTKU1pY3Jvc29mdCBBenVyZSBGZWRlcmF0ZWQg
-    #           U1NPIENlcnRpZmljYXRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxMroSfx8Abyk
-    #           VKyFvpntSq+MSTcuSOV7n28Sb3Ck38ocX3OF6M2K8K17B4x9RnwoX7VTqarwDPMoTTJ5WpKw5CVA
-    #           70mlLdhjlz9p5rXQItZHMgiGzfLoU8hCjvmCfZmFBSMOG88tdfOrqQLgkNif+NonlyUsdBHJ0N3j
-    #           XD75RBqDA75HukoBlSaVKc8fiKiltBuZQKi8ykUHhw6nqH737N+u0AoKNIJJEgXbppgWxhD7zEuL
-    #           eCHsKsn1hYeqWPZ2K2aDPVvGlDUmMd1rrsCNIQ0wL/rtneugsu0mD6QsNFitHnSJr3fxlXHExJAt
-    #           0uviO4K2CJSpiIFTBarALDgYCQIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQB+Q40nKrGLKrRTstNY
-    #           qRUNRQPDtKjIEPl+zWInhwWzpSA06QyEEAyGkfShGTu9wPiFqb4zibpHugH6GnWMOSMsUcZwKV+3
-    #           2L7UhXsX/EWYbUtdh2TitUOEE6uiz2iYDT4VaGKgj9ZXytp8Jc4xuIW8yBRzBasL+oR+Bq8hTGN4
-    #           FXoKLGpjJUxbYzcJ1XUpxr5EzCC0wJ4VilQQcvJMWL0LnUMOXECD3AkW2ETGSfWGt6z9r+eyjHyk
-    #           RkT1BF/UstVzHbm6UdMdy/0f7BxUp1SLis0ONvqXK98zrjmmwqr6vImE2JVYItkCoWzsq28AUxHf
-    #           GeGtJgx4Xe2JdubeCLd0
-    #           -----END CERTIFICATE-----
-    #       redirectURI: https://login.microsoftonline.com/4d40b7e0-fca8-48d9-8fea-3d117a06b2a7/saml2
-    #       usernameAttr: email
-    #       emailAttr: email
-    #       groupsAttr: Group
+        - email    
   rbac:
     policy.default: role:readonly
     policy.csv: |
-      g, "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415", role:admin # consultant
-      g, "9e9e711b-9028-472f-a966-7ed7e0b704ae", role:admin # tech-lead
+      g, "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415", role:admin
+      g, "9e9e711b-9028-472f-a966-7ed7e0b704ae", role:admin
+    scopes: '[groups, email]'      
 notifications:
   argocdUrl: "https://${local.host_name}.${local.domain_name}"
 
