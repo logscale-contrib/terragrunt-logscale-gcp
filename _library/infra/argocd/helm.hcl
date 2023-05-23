@@ -132,17 +132,17 @@ repoServer:
   autoscaling:
     enabled: true
     minReplicas: 2
-    maxReplicas: 4
+    maxReplicas: 3
   pdb: 
     enabled: true
     minAvailable: 1
-    maxUnavailable: "1"
+    maxUnavailable: 1
   resources:
     requests:
       cpu: 10m
       memory: 100Mi
     limits:
-      cpu: 250m
+      cpu: 1
       memory: 384Mi
 
 applicationSet:
@@ -162,7 +162,7 @@ server:
   autoscaling:
     enabled: true
     minReplicas: 2
-    maxReplicas: 4
+    maxReplicas: 3
   pdb: 
     enabled: true
     minAvailable: 1
@@ -187,6 +187,7 @@ server:
       cpu: 1
       memory: 96Mi
 dex:
+  enabled: false
   pdb: 
     enabled: true
     minAvailable: 0
