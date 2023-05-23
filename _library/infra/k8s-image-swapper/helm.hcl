@@ -125,9 +125,9 @@ resources:
   requests: 
     cpu: 50m
     memory: 64Mi
-  limits:
-    cpu: 500m
-    memory: 1Gi  
+  # limits:
+  #   cpu: 1
+  #   memory: 1Gi  
 EOF
   )
 

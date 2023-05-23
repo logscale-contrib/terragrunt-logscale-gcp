@@ -103,9 +103,9 @@ resources:
   requests: 
     cpu: 50m
     memory: 50Mi
-  limits:
-    cpu: 250m
-    memory: 96Mi
+  # limits:
+  #   cpu: 1
+  #   memory: 96Mi
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:

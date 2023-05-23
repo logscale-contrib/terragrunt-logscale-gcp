@@ -98,27 +98,11 @@ controlNamespace: logging
 # -- EventTailer config
 eventTailer: 
   name: ops
-  resources:
-    limits:
-      cpu: 200m
-      memory: 100M
-    requests:
-      cpu: 100m
-      memory: 50M
-  # pvc:
-  #   accessModes:
-  #     - ReadWriteOnce
-  #   volumeMode: Filesystem
-  #   storage: 1Gi
-  #   storageClassName: standard
 
 # -- HostTailer config
 hostTailer:
   name: ops
   resources:
-    limits:
-      cpu: 200m
-      memory: 100M
     requests:
       cpu: 100m
       memory: 50M
@@ -266,10 +250,12 @@ clusterOutputs:
   - name: logscale-infra-event
     spec:
       splunkHec:
+        ca_path: 
+          value: /etc/ssl/certs/
         hec_host: ${local.inputs_url}
-        insecure_ssl: true
-        protocol: http
-        hec_port: 8080
+        insecure_ssl: ${local.insecure_ssl}
+        protocol: ${local.protocol}
+        hec_port: ${local.hec_port}
         hec_token:
           valueFrom:
             secretKeyRef:
@@ -280,6 +266,8 @@ clusterOutputs:
   - name: logscale-infra-host
     spec:
       splunkHec:
+        ca_path: 
+          value: /etc/ssl/certs/
         hec_host: ${local.inputs_url}
         insecure_ssl: ${local.insecure_ssl}
         protocol: ${local.protocol}
@@ -294,6 +282,8 @@ clusterOutputs:
   - name: logscale-infra-pod
     spec:
       splunkHec:
+        ca_path: 
+          value: /etc/ssl/certs/
         hec_host: ${local.inputs_url}
         insecure_ssl: ${local.insecure_ssl}
         protocol: ${local.protocol}
@@ -308,6 +298,8 @@ clusterOutputs:
   - name: logscale-app-pod
     spec:
       splunkHec:
+        ca_path: 
+          value: /etc/ssl/certs/
         hec_host: ${local.inputs_url}
         insecure_ssl: ${local.insecure_ssl}
         protocol: ${local.protocol}
@@ -322,17 +314,11 @@ clusterOutputs:
 
 fluentbit:
   resources:
-    limits:
-      cpu: 250m
-      memory: 200M
     requests:
       cpu: 50m
       memory: 100M
 fluentd:
   resources:
-    limits:
-      cpu: "500m"
-      memory: 400M
     requests:
       cpu: ".25"
       memory:  200M  

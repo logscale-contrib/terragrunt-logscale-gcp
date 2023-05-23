@@ -97,9 +97,9 @@ resources:
   requests: 
     cpu: 50m
     memory: 50Mi
-  limits:
-    cpu: 250m
-    memory: 64Mi
+  # limits:
+  #   cpu: 1
+  #   memory: 64Mi
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
@@ -124,17 +124,17 @@ certController:
     requests: 
       cpu: 50m
       memory: 96Mi
-    limits:
-      cpu: 250m
-      memory: 128Mi
+    # limits:
+    #   cpu: 1
+    #   memory: 128Mi
 webhook:
   resources:
     requests: 
       cpu: 100m
       memory: 50Mi
-    limits:
-      cpu: "250m"
-      memory: 100Mi
+    # limits:
+    #   cpu: 1
+    #   memory: 100Mi
 EOF
   )
 

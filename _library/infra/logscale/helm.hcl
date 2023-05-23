@@ -59,7 +59,9 @@ dependencies {
     "${get_terragrunt_dir()}/../cert-gke-ui/",
     "${get_terragrunt_dir()}/../../logscale-operator/helm/",
     "${get_terragrunt_dir()}/../../strimzi-operator/helm/",
-    "${get_terragrunt_dir()}/../../otel-operator/helm/"
+    "${get_terragrunt_dir()}/../../otel-operator/helm/",
+    "${get_terragrunt_dir()}/../../external-secrets/helm/",
+
   ]
 }
 generate "provider_k8s" {
@@ -145,9 +147,9 @@ humio:
     requests:
       memory: 5Gi
       cpu: 500m
-    limits:
-      memory: 8Gi
-      cpu: 2
+    # limits:
+    #   memory: 8Gi
+    #   cpu: 2
 
   digestPartitionsCount: 24
   storagePartitionsCount: 6
@@ -242,9 +244,9 @@ humio:
     ingest:
       nodeCount: 3
       resources:
-        limits:
-          cpu: "500m"
-          memory: 3Gi
+        # limits:
+        #   cpu: "500m"
+        #   memory: 3Gi
         requests:
           cpu: "100m"
           memory: 1500Mi
@@ -305,9 +307,9 @@ humio:
     ui:
       nodeCount: 3
       resources:
-        limits:
-          cpu: "1"
-          memory: 4Gi
+        # limits:
+        #   cpu: "1"
+        #   memory: 4Gi
         requests:
           cpu: "100m"
           memory: 2Gi
@@ -419,9 +421,9 @@ kafka:
       #Note the following resources are expected to support 1-3 TB/Day however
       # storage is sized for 1TB/day increase the storage to match the expected load
       cpu: 100m
-    limits:
-      memory: 3500Mi
-      cpu: 1
+    # limits:
+    #   memory: 3500Mi
+    #   cpu: 1
   #(total ingest uncompressed per day / 5 ) * 3 / ReplicaCount
   # ReplicaCount must be odd and greater than 3 should be divisible by AZ
   # Example: 1 TB/Day '1/5*3/3=205' 3 Replcias may not survive a zone failure at peak
@@ -477,9 +479,9 @@ zookeeper:
     requests:
       memory: 250Mi
       cpu: "100m"
-    limits:
-      memory: 284Mi
-      cpu: "500m"
+    # limits:
+    #   memory: 284Mi
+    #   cpu: "500m"
   storage:
     deleteClaim: true
     type: persistent-claim

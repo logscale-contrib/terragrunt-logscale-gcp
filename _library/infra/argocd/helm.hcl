@@ -102,17 +102,17 @@ redis-ha:
       requests:
         cpu: ".5"
         memory: 96Mi
-      limits:
-        cpu: "2"
-        memory: 256Mi
+      # limits:
+      #   cpu: "2"
+      #   memory: 256Mi
   haproxy:
     resources:
       requests:
         cpu: 50m
         memory: 96Mi
-      limits:
-        cpu: 500m
-        memory: 128Mi
+      # limits:
+      #   cpu: 500m
+      #   memory: 128Mi
 
 
 controller:
@@ -124,10 +124,10 @@ controller:
   resources:
     requests:
       cpu: 200m
-      memory: 400Mi
-    limits:
-      cpu: 1
-      memory: 1Gi
+      memory: 512Mi
+    # limits:
+    #   cpu: 2
+    #   memory: 1Gi
 repoServer:
   autoscaling:
     enabled: true
@@ -141,9 +141,9 @@ repoServer:
     requests:
       cpu: 10m
       memory: 100Mi
-    limits:
-      cpu: 1
-      memory: 384Mi
+    # limits:
+    #   cpu: 2
+    #   memory: 384Mi
 
 applicationSet:
   replicas: 2
@@ -155,9 +155,9 @@ applicationSet:
     requests:
       cpu: 50m
       memory: 50Mi
-    limits:
-      cpu: 250m
-      memory: 100Mi
+    # limits:
+    #   cpu: 250m
+    #   memory: 100Mi
 server:
   autoscaling:
     enabled: true
@@ -183,9 +183,9 @@ server:
     requests:
       cpu: 100m
       memory: 64Mi
-    limits:
-      cpu: 1
-      memory: 96Mi
+    # limits:
+    #   cpu: 2
+    #   memory: 256Mi
 dex:
   enabled: false
   pdb: 
@@ -196,9 +196,9 @@ dex:
     requests:
       cpu: 10m
       memory: 50Mi
-    limits:
-      cpu: 250m
-      memory: 128Mi
+    # limits:
+    #   cpu: 250m
+    #   memory: 128Mi
 notifications:
   pdb: 
     enabled: true
@@ -208,9 +208,9 @@ notifications:
     requests:
       cpu: 10m
       memory: 30Mi
-    limits:
-      cpu: 150m
-      memory: 96Mi
+    # limits:
+    #   cpu: 150m
+    #   memory: 96Mi
 global:
   logging:
     # -- Set the global logging format. Either: `text` or `json`

@@ -81,28 +81,28 @@ inputs = {
       id           = "89A7C9DA-3C3D-4D61-AFB5-825B7F527B14"
       value        = "Admin"
       description  = "Grafana org admin Users"
-      enabled = true
+      enabled      = true
     },
     {
       display_name = "Grafana Viewer"
       id           = "46BA5679-DA99-4345-92AD-19A058F98CEF"
       value        = "User"
       description  = "Grafana read only Users"
-      enabled = true
+      enabled      = true
     },
     {
       display_name = "Grafana Editor"
       id           = "7312F8A6-31D6-46F5-8907-EA6325ABD4D6"
       value        = "Editor"
       description  = "Grafana Editor Users"
-      enabled = true
+      enabled      = true
     },
     {
       display_name = "Grafana Server Admin"
       id           = "A164B082-6C1C-4B05-AE01-294798A29607"
       value        = "GrafanaAdmin"
       description  = "Grafana GrafanaAdmin Users"
-      enabled = true
+      enabled      = true
     }
   ]
 

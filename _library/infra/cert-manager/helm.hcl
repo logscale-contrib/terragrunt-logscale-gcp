@@ -94,10 +94,9 @@ resources:
   requests:
     memory: "64Mi"
     cpu: "50m"
-  limits:
-    memory: "256Mi"
-    cpu: "250m"
-
+  # limits:
+  #   memory: "256Mi"
+  #   cpu: 1
 installCRDs: true
 
 replicaCount: 2
@@ -118,9 +117,9 @@ cainjector:
     requests:
       memory: "128Mi"
       cpu: "20m"
-    limits:
-      memory: "384Mi"
-      cpu: "150m"    
+    # limits:
+    #   memory: "384Mi"
+    #   cpu: 1
   replicaCount: 2
 
 webhook:
@@ -128,9 +127,9 @@ webhook:
     requests:
       memory: "24Mi"
       cpu: "50m"
-    limits:
-      memory: "128Mi"
-      cpu: "250m"    
+    # limits:
+    #   memory: "128Mi"
+    #   cpu: 1
   replicaCount: 2
   securePort: 8443
 

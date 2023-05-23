@@ -82,7 +82,7 @@ inputs = {
   release          = "${local.codename}-content"
   chart            = "logscale-content"
   chart_version    = "1.3.1"
-  namespace        = "logscale-ops"
+  namespace        = "${local.name}-${local.codename}"
   create_namespace = false
   project          = "${local.name}-${local.env}-${local.codename}-logscale"
 
