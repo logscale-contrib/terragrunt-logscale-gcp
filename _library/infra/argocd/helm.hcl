@@ -43,11 +43,11 @@ dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 dependency "sso" {
-   config_path="${get_terragrunt_dir()}/../sso/"
+  config_path = "${get_terragrunt_dir()}/../sso/"
 }
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../ns/"   
+    "${get_terragrunt_dir()}/../ns/"
   ]
 }
 generate "provider_gke" {
@@ -126,7 +126,7 @@ controller:
       cpu: 200m
       memory: 400Mi
     limits:
-      cpu: 400m
+      cpu: 1
       memory: 1Gi
 repoServer:
   autoscaling:
@@ -184,7 +184,7 @@ server:
       cpu: 100m
       memory: 64Mi
     limits:
-      cpu: 250m
+      cpu: 1
       memory: 96Mi
 dex:
   pdb: 
@@ -220,6 +220,7 @@ global:
       whenUnsatisfiable: DoNotSchedule    
 configs:
   cm:
+    admin.enabled: false
     url: "https://${local.host_name}.${local.domain_name}"
     oidc.config: |
       name: SSO

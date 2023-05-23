@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v1.3.0"
+  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v1.4.4"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ locals {
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
-  host_name = "argocd"
+  host_name = "grafana"
 
 }
 
@@ -72,40 +72,63 @@ inputs = {
 
   name = "${local.host_name}.${local.domain_name}"
   identifier_uris = [
-    "https://${local.host_name}.${local.domain_name}/auth/callback"
+    "https://${local.host_name}.${local.domain_name}"
   ]
-  required_resource_access = [{
-    resource_app_id = "00000003-0000-0000-c000-000000000000" # Microsoft Graph
 
-    resource_access = [{
-      id   = "df021288-bdef-4463-88db-98f22de89214" # User.Read.All
-      type = "Role"
-    }]
-  }]
-  consent_resource_access = [{
-    resource_app_id = "00000003-0000-0000-c000-000000000000" # Microsoft Graph
-    resource_access = "df021288-bdef-4463-88db-98f22de89214"
-  }]
+  app_roles = [
+    {
+      display_name = "Grafana Org Admin"
+      id           = "89A7C9DA-3C3D-4D61-AFB5-825B7F527B14"
+      value        = "Admin"
+      description  = "Grafana org admin Users"
+      enabled = true
+    },
+    {
+      display_name = "Grafana Viewer"
+      id           = "46BA5679-DA99-4345-92AD-19A058F98CEF"
+      value        = "User"
+      description  = "Grafana read only Users"
+      enabled = true
+    },
+    {
+      display_name = "Grafana Editor"
+      id           = "7312F8A6-31D6-46F5-8907-EA6325ABD4D6"
+      value        = "Editor"
+      description  = "Grafana Editor Users"
+      enabled = true
+    },
+    {
+      display_name = "Grafana Server Admin"
+      id           = "A164B082-6C1C-4B05-AE01-294798A29607"
+      value        = "GrafanaAdmin"
+      description  = "Grafana GrafanaAdmin Users"
+      enabled = true
+    }
+  ]
 
   web = [{
-    homepage_url = "https://${local.host_name}.${local.domain_name}"
+    homepage_url = "https://${local.host_name}.${local.domain_name}/"
     logout_url   = "https://${local.host_name}.${local.domain_name}/auth/logout"
-    redirect_uris = [
-      "https://${local.host_name}.${local.domain_name}/auth/callback"
-    ]
-  }]
-
-  public_client = [{
-    redirect_uris = ["http://localhost:8085/auth/callback"]
+    redirect_uris = ["https://${local.host_name}.${local.domain_name}/login/azuread",
+    "https://${local.host_name}.${local.domain_name}/"]
   }]
 
   secret_name      = "azuread-oidc"
-  secret_namespace = "argocd"
-  secret_key       = "oidc.azure.clientSecret"
-  secret_labels = {
-    "app.kubernetes.io/part-of" = "argocd"
-  }
+  secret_namespace = "monitoring"
+  secret_key       = "client_secret"
+  # secret_labels = {
+  #     "app.kubernetes.io/part-of"= "argocd"
+  # }
 
-  assigned_groups = ["consultant", "tech-lead"]
+  assigned_groups = [
+    {
+      display_name = "consultant",
+      app_role_id  = "89A7C9DA-3C3D-4D61-AFB5-825B7F527B14"
+    },
+    {
+      display_name = "tech-lead",
+      app_role_id  = "A164B082-6C1C-4B05-AE01-294798A29607"
+    }
+  ]
 
 }

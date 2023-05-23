@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v1.3.0"
+  source = "tfr:///terraform-module/release/helm?version=2.8.0"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ locals {
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
-  host_name = "argocd"
+  host_name = "grafana"
 
 }
 
@@ -47,18 +47,20 @@ dependencies {
     "${get_terragrunt_dir()}/../ns/"
   ]
 }
-generate "provider_k8s" {
-  path      = "provider_k8s.tf"
+generate "provider_gke" {
+  path      = "provider_gke.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-provider "kubernetes" {
-  
+
+provider "helm" {
+  kubernetes {
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       args        = []
       command     = "gke-gcloud-auth-plugin"
+    }
   }
 }
 EOF
@@ -69,43 +71,21 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+  namespace  = "monitoring"
+  repository = "https://logscale-contrib.github.io/helm-google-gke-managed-cert/"
 
-  name = "${local.host_name}.${local.domain_name}"
-  identifier_uris = [
-    "https://${local.host_name}.${local.domain_name}/auth/callback"
-  ]
-  required_resource_access = [{
-    resource_app_id = "00000003-0000-0000-c000-000000000000" # Microsoft Graph
+  app = {
+    name             = "grafana"
+    create_namespace = true
 
-    resource_access = [{
-      id   = "df021288-bdef-4463-88db-98f22de89214" # User.Read.All
-      type = "Role"
-    }]
-  }]
-  consent_resource_access = [{
-    resource_app_id = "00000003-0000-0000-c000-000000000000" # Microsoft Graph
-    resource_access = "df021288-bdef-4463-88db-98f22de89214"
-  }]
+    chart   = "google-gke-managed-cert"
+    version = "1.0.3"
 
-  web = [{
-    homepage_url = "https://${local.host_name}.${local.domain_name}"
-    logout_url   = "https://${local.host_name}.${local.domain_name}/auth/logout"
-    redirect_uris = [
-      "https://${local.host_name}.${local.domain_name}/auth/callback"
-    ]
-  }]
-
-  public_client = [{
-    redirect_uris = ["http://localhost:8085/auth/callback"]
-  }]
-
-  secret_name      = "azuread-oidc"
-  secret_namespace = "argocd"
-  secret_key       = "oidc.azure.clientSecret"
-  secret_labels = {
-    "app.kubernetes.io/part-of" = "argocd"
+    wait   = false
+    deploy = 1
   }
-
-  assigned_groups = ["consultant", "tech-lead"]
-
+  values = [<<EOF
+domains: ["${local.host_name}.${local.domain_name}"]
+EOF 
+  ]
 }

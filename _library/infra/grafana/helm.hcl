@@ -42,6 +42,9 @@ dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
 
 }
+dependency "sso" {
+  config_path = "${get_terragrunt_dir()}/../sso-grafana/"
+}
 
 dependencies {
   paths = [
@@ -80,7 +83,7 @@ inputs = {
 
   release          = local.codename
   chart            = "kube-prometheus-stack"
-  chart_version    = "45.24.0"
+  chart_version    = "45.30.0"
   namespace        = "monitoring"
   create_namespace = false
   project          = "${local.name}-${local.env}-${local.codename}-common"
@@ -88,6 +91,48 @@ inputs = {
   server_side_apply = false
 
   values = yamldecode(<<EOF
+grafana:
+  service:
+    annotations:
+      cloud.google.com/neg: '{"ingress": true}' # Creates a NEG after an Ingress is created
+  ingress:
+    enabled: true
+    hosts:
+      - grafana.${local.domain_name}
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: grafana.${local.domain_name}
+      networking.gke.io/managed-certificates: grafana-google-gke-managed-cert
+  extraSecretMounts:
+    - name: azuread-oidc
+      secretName: azuread-oidc
+      defaultMode: 0440
+      mountPath: /etc/secrets/azuread-oidc
+      readOnly: true
+  grafana.ini:
+    server:
+      root_url: https://grafana.${local.domain_name}/
+    log.console:
+      format: json
+    auth:
+      login_maximum_inactive_lifetime_duration: 14h
+      login_maximum_lifetime_duration: 1d
+      disable_login_form: true
+    auth.basic:
+      enabled: false
+    auth.azuread:
+      name: Azure AD
+      enabled: true
+      allow_sign_up: true
+      auto_login: false
+      client_id: ${dependency.sso.outputs.application_id}
+      client_secret: $__file{/etc/secrets/azuread-oidc/client_secret}
+      scopes: openid email profile offline_access
+      auth_url: https://login.microsoftonline.com/${dependency.sso.outputs.directory_tenant_id}/oauth2/v2.0/authorize
+      token_url: https://login.microsoftonline.com/${dependency.sso.outputs.directory_tenant_id}/oauth2/v2.0/token
+      role_attribute_strict: false
+      allow_assign_grafana_admin: true
+      skip_org_role_sync: false
+
 prometheusOperator:
   admissionWebhooks:
     certManager:
