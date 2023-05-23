@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v1.4.4"
+  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v1.4.7"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -122,11 +122,13 @@ inputs = {
 
   assigned_groups = [
     {
-      display_name = "consultant",
+      #display_name = "consultant",
+      group_id = "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415"
       app_role_id  = "89A7C9DA-3C3D-4D61-AFB5-825B7F527B14"
     },
     {
-      display_name = "tech-lead",
+      #display_name = "tech-lead",
+      group_id = "9e9e711b-9028-472f-a966-7ed7e0b704ae"
       app_role_id  = "A164B082-6C1C-4B05-AE01-294798A29607"
     }
   ]

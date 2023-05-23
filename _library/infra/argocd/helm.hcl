@@ -238,8 +238,8 @@ configs:
   rbac:
     policy.default: role:readonly
     policy.csv: |
-      g, "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415", role:admin
-      g, "9e9e711b-9028-472f-a966-7ed7e0b704ae", role:admin
+      g, "consultant", role:admin
+      g, "tech-lead", role:admin
     scopes: '[groups, email]'      
 notifications:
   argocdUrl: "https://${local.host_name}.${local.domain_name}"
