@@ -51,6 +51,9 @@ dependency "k8s" {
 dependency "bucket" {
   config_path = "${get_terragrunt_dir()}/../bucket/"
 }
+dependency "sso" {
+  config_path = "${get_terragrunt_dir()}/../sso/"
+}
 dependencies {
   paths = [
     "${get_terragrunt_dir()}/../project/",
@@ -94,7 +97,7 @@ inputs = {
 
   release          = local.codename
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.48"
+  chart_version    = "v7.0.0-next.52"
   namespace        = "${local.name}-${local.codename}"
   create_namespace = false
   project          = "${local.name}-${local.env}-${local.codename}-logscale"
@@ -113,11 +116,18 @@ humio:
   # Signon
   rootUser: ${local.humio_rootUser}
 
-  sso:
-    idpCertificate: "${base64encode(local.humio_sso_idpCertificate)}"
-    signOnUrl: "${local.humio_sso_signOnUrl}"
-    entityID: "${local.humio_sso_entityID}"
-
+  auth:
+    method: oauth
+    # saml:
+    #   idpCertificate: "${base64encode(local.humio_sso_idpCertificate)}"
+    #   signOnUrl: "${local.humio_sso_signOnUrl}"
+    #   entityID: "${local.humio_sso_entityID}"
+    oauth:
+      provider: ${dependency.sso.outputs.issuer}
+      client_id: ${dependency.sso.outputs.application_id}
+      client_secret_name: azuread-oidc
+      client_secret_key: "oidc.azure.clientSecret"
+      scopes: "openid,email,profile,groups"
   extraENV:
     - name: MAX_SERIES_LIMIT
       value: "1000"

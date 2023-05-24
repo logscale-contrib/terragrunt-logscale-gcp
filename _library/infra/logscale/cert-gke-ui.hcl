@@ -71,7 +71,7 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  namespace  = "logscale-ops"
+  namespace  = "${local.name}-${local.codename}"
   repository = "https://logscale-contrib.github.io/helm-google-gke-managed-cert/"
 
   app = {

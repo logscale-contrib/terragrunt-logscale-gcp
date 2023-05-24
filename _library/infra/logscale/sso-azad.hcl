@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "tfr:///terraform-module/release/helm?version=2.8.0"
+  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v1.4.7"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -38,6 +38,7 @@ locals {
 
 }
 
+
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
@@ -46,21 +47,18 @@ dependencies {
     "${get_terragrunt_dir()}/../ns/"
   ]
 }
-
-generate "provider_gke" {
-  path      = "provider_gke.tf"
+generate "provider_k8s" {
+  path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-
-provider "helm" {
-  kubernetes {
+provider "kubernetes" {
+  
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       args        = []
       command     = "gke-gcloud-auth-plugin"
-  }
   }
 }
 EOF
@@ -71,21 +69,33 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  namespace  = "${local.name}-${local.codename}"
-  repository = "https://logscale-contrib.github.io/helm-google-gke-managed-cert/"
 
-  app = {
-    name             = "cert-inputs"
-    create_namespace = true
+  name = "logscale-${local.codename}.${local.domain_name}"
+  identifier_uris = [
+    "https://logscale-${local.codename}.${local.domain_name}"
+  ]
+  
+  web = [{
+    homepage_url = "https://logscale-${local.codename}.${local.domain_name}"
+    logout_url   = "https://logscale-${local.codename}.${local.domain_name}/logout"
+    redirect_uris = [
+      "https://logscale-${local.codename}.${local.domain_name}/auth/oidc"
+    ]
+  }]
 
-    chart   = "google-gke-managed-cert"
-    version = "1.0.3"
+  secret_name      = "azuread-oidc"
+  secret_namespace = "${local.name}-${local.codename}"
+  secret_key       = "oidc.azure.clientSecret"
 
-    wait   = false
-    deploy = 1
-  }
-  values = [<<EOF
-domains: ["logscale-${local.codename}-inputs.${local.domain_name}"]
-EOF 
+
+ assigned_groups = [
+    {
+      #display_name = "consultant",
+      group_id = "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415"
+    },
+    {
+      #display_name = "tech-lead",
+      group_id = "9e9e711b-9028-472f-a966-7ed7e0b704ae"
+    }
   ]
 }
