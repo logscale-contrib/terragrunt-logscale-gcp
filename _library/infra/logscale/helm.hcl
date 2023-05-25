@@ -127,7 +127,8 @@ humio:
       client_id: ${dependency.sso.outputs.application_id}
       client_secret_name: azuread-oidc
       client_secret_key: "oidc.azure.clientSecret"
-      scopes: "openid,email,profile,groups"
+      groups_claim: humio-groups
+      scopes: "openid,email,profile"
   extraENV:
     - name: MAX_SERIES_LIMIT
       value: "1000"
