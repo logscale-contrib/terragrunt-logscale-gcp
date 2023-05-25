@@ -89,9 +89,7 @@ resources:
   requests: 
     cpu: 50m
     memory: 70Mi
-  limits:
-    cpu: 250m
-    memory: 128Mi  
+watchNamespace: logging
 EOF
   )
 

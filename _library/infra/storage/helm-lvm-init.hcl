@@ -10,13 +10,13 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v1.4.9"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
 
-# ---------------------------------------------------------------------------------------------------------------------
-# Locals are named constants that are reusable within the configuration.
-# ---------------------------------------------------------------------------------------------------------------------
+
 locals {
+  # Expose the base source URL so different versions of the module can be deployed in different environments. This will
+  # be used to construct the terraform block in the child terragrunt configurations.
 
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
@@ -30,21 +30,22 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
-
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
-  host_name = "argocd"
+  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
 
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
+
 }
+
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../ns/"
+    "${get_terragrunt_dir()}/../../common/project/"
   ]
 }
 generate "provider_k8s" {
@@ -69,33 +70,40 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+  uniqueName = "${local.name}-${local.codename}"
 
-  name = "logscale-${local.codename}.${local.domain_name}"
-  identifier_uris = [
-    "https://logscale-${local.codename}.${local.domain_name}"
-  ]
+  destination_name = local.destination_name
 
-  web = [{
-    homepage_url = "https://logscale-${local.codename}.${local.domain_name}"
-    logout_url   = "https://logscale-${local.codename}.${local.domain_name}/logout"
-    redirect_uris = [
-      "https://logscale-${local.codename}.${local.domain_name}/auth/oidc"
-    ]
-  }]
+  repository = "https://logscale-contrib.github.io/openebs-withlvm-init"
 
-  secret_name      = "azuread-oidc"
-  secret_namespace = "${local.name}-${local.codename}"
-  secret_key       = "oidc.azure.clientSecret"
+  release          = local.codename
+  chart            = "openebs-withlvm-init"
+  chart_version    = "2.4.6"
+  namespace        = "kube-system"
+  create_namespace = false
+  project          = "${local.name}-${local.env}-${local.codename}-common"
+  skipCrds         = false
 
 
-  assigned_groups = [
-    {
-      #display_name = "consultant",
-      group_id = "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415"
-    },
-    {
-      #display_name = "tech-lead",
-      group_id = "9e9e711b-9028-472f-a966-7ed7e0b704ae"
-    }
+  values = yamldecode(<<EOF
+config:
+    platform: "gcp"
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: storageClass
+              operator: In
+              values:
+                - nvme
+            - key: kubernetes.io/os
+              operator: In
+              values:
+                - linux
+EOF
+  )
+
+  ignoreDifferences = [
   ]
 }

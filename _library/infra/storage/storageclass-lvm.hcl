@@ -10,13 +10,13 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v1.4.9"
+  source = "git::https://github.com/logscale-contrib/terraform-k8s-generic-manifest.git?ref=v1.0.0"
 }
 
-# ---------------------------------------------------------------------------------------------------------------------
-# Locals are named constants that are reusable within the configuration.
-# ---------------------------------------------------------------------------------------------------------------------
+
 locals {
+  # Expose the base source URL so different versions of the module can be deployed in different environments. This will
+  # be used to construct the terraform block in the child terragrunt configurations.
 
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
@@ -30,11 +30,10 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
-
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
-  host_name = "argocd"
+  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
 
 }
 
@@ -42,9 +41,11 @@ locals {
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
+
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../ns/"
+    "${get_terragrunt_dir()}/../../common/project/",
+    "${get_terragrunt_dir()}/../../external-secrets/helm/",
   ]
 }
 generate "provider_k8s" {
@@ -70,32 +71,21 @@ EOF
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
 
-  name = "logscale-${local.codename}.${local.domain_name}"
-  identifier_uris = [
-    "https://logscale-${local.codename}.${local.domain_name}"
-  ]
+  manifest = <<EOF
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: lvmpv
+allowVolumeExpansion: true
+parameters:
+  storage: "lvm"
+  volgroup: "instancestore"
+provisioner: local.csi.openebs.io
+allowedTopologies:
+- matchLabelExpressions:
+  - key: storageClass
+    values:
+      - nvme
+EOF
 
-  web = [{
-    homepage_url = "https://logscale-${local.codename}.${local.domain_name}"
-    logout_url   = "https://logscale-${local.codename}.${local.domain_name}/logout"
-    redirect_uris = [
-      "https://logscale-${local.codename}.${local.domain_name}/auth/oidc"
-    ]
-  }]
-
-  secret_name      = "azuread-oidc"
-  secret_namespace = "${local.name}-${local.codename}"
-  secret_key       = "oidc.azure.clientSecret"
-
-
-  assigned_groups = [
-    {
-      #display_name = "consultant",
-      group_id = "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415"
-    },
-    {
-      #display_name = "tech-lead",
-      group_id = "9e9e711b-9028-472f-a966-7ed7e0b704ae"
-    }
-  ]
 }

@@ -98,33 +98,43 @@ controlNamespace: logging
 # -- EventTailer config
 eventTailer: 
   name: ops
+  containerOverrides:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 50M
 
 # -- HostTailer config
 hostTailer:
   name: ops
-  resources:
-    requests:
-      cpu: 100m
-      memory: 50M
+  workloadOverrides:
+    tolerations:
+      - operator: "Exists"
+
   systemdTailers:
     - name: host-tailer-systemd-kubelet
       disabled: false
       maxEntries: 200
       systemdFilter: "kubelet.service"
-nodeAgents:
-  - name: win-agent
-    profile: windows
-    nodeAgentFluentbit:
-      tls:
-        enabled: false
-  - name: linux-agent
-    profile: linux
-    nodeAgentFluentbit:
-      metrics:
-        prometheusAnnotations: true
-        serviceMonitor: false
-      tls:
-        enabled: false 
+      containerOverrides:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 50M
+# nodeAgents:
+#   - name: win-agent
+#     profile: windows
+#     nodeAgentFluentbit:
+#       tls:
+#         enabled: false
+#   - name: linux-agent
+#     profile: linux
+#     nodeAgentFluentbit:
+#       metrics:
+#         prometheusAnnotations: true
+#         serviceMonitor: false
+#       tls:
+#         enabled: false 
 enableRecreateWorkloadOnImmutableFieldChange: true
 clusterFlows:
   - name: k8s-infra-hosts
@@ -317,10 +327,13 @@ fluentbit:
     requests:
       cpu: 50m
       memory: 100M
+  tolerations:
+    - operator: "Exists"
+
 fluentd:
   resources:
     requests:
-      cpu: ".25"
+      cpu: "1"
       memory:  200M  
 EOF
   )

@@ -174,6 +174,10 @@ humio:
       operator: "Equal"
       value: "compute"
       effect: "NoSchedule"
+    - key: "storageClass"
+      operator: "Equal"
+      value: "nvme"
+      effect: "NoSchedule"    
     - key: "node.kubernetes.io/disk-pressure"
       operator: "Exists"
       tolerationSeconds: 300
@@ -192,6 +196,9 @@ humio:
               - key: "computeClass"
                 operator: "In"
                 values: ["compute"]      
+              - key: "storageClass"
+                operator: "In"
+                values: ["nvme"]      
           - matchExpressions:
               - key: "kubernetes.io/arch"
                 operator: "In"
@@ -208,21 +215,21 @@ humio:
     #             values: ["${local.codename}-logscale"]
     #       topologyKey: "kubernetes.io/hostname"
   topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchExpressions:
-              - key: humio.com/node-pool
-                operator: In
-                values:
-                  - "${local.codename}-logscale"
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchExpressions:
+          - key: humio.com/node-pool
+            operator: In
+            values:
+              - "${local.codename}-logscale"
   dataVolumePersistentVolumeClaimSpecTemplate:
     accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        storage: "100Gi"
-    storageClassName: "premium-rwo"
+        storage: "600Gi"
+    storageClassName: "openebs-lvmpv"
   frontEndDataVolumePersistentVolumeClaimSpecTemplate:
     accessModes: ["ReadWriteOnce"]
     resources:

@@ -106,7 +106,7 @@ inputs = {
     "app.kubernetes.io/part-of" = "argocd"
   }
 
-    assigned_groups = [
+  assigned_groups = [
     {
       #display_name = "consultant",
       group_id = "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415"
