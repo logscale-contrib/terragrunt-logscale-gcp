@@ -97,7 +97,7 @@ inputs = {
 
   release          = local.codename
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.57"
+  chart_version    = "v7.0.0-next.58"
   namespace        = "${local.name}-${local.codename}"
   create_namespace = false
   project          = "${local.name}-${local.env}-${local.codename}-logscale"
@@ -139,6 +139,7 @@ humio:
   buckets:
     type: gcp
     name: ${dependency.bucket.outputs.name}
+    downloadConcurrency: 20
 
   #Kafka
   kafka:
