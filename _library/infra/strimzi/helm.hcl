@@ -77,7 +77,7 @@ inputs = {
 
   release          = local.codename
   chart            = "strimzi-kafka-operator"
-  chart_version    = "0.34.*"
+  chart_version    = "0.35.*"
   namespace        = "strimzi-operator"
   create_namespace = false
   project          = "${local.name}-${local.env}-${local.codename}-common"

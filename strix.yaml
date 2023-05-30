@@ -1,0 +1,127 @@
+---
+apiVersion: v1
+data:
+  PERF_TENS_GB_PER_DAY: "20"
+  PERF_SIMULATION: "FixedRateIngestSimulation"
+  PERF_TIME: "604800"
+kind: ConfigMap
+metadata:
+  name: strix-bqsu-fixedrate
+  namespace: logscale-east
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tyto-bqsu-strix
+  namespace: logscale-east
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tyto-bqsu-strix
+rules:
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tyto-bqsu-strix
+  annotations:
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tyto-bqsu-strix
+subjects:
+- kind: ServiceAccount
+  name: tyto-bqsu-strix
+  namespace: logscale-east
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: strix-bqsu-fixedrate
+  namespace: logscale-east
+  labels:
+    app.kubernetes.io/name: strix
+    app.kubernetes.io/instance: tyto-bqsu-strix
+    app.kubernetes.io/version: "1.0"
+spec:
+  replicas: 9
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: strix
+      app.kubernetes.io/instance: tyto-bqsu-strix-fixed-rate-1
+  strategy: 
+    type: RollingUpdate
+    rollingUpdate: 
+      maxSurge: 10
+      maxUnavailable: 30
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: strix
+        app.kubernetes.io/instance: tyto-bqsu-strix-fixed-rate-1
+    spec:
+      serviceAccountName: tyto-bqsu-strix
+      affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: computeClass
+                  operator: In
+                  values:
+                  - compute
+                  - general
+      tolerations:
+          - key: "computeClass"
+            operator: "Equal"
+            value: "compute"
+            effect: "NoSchedule" 
+      topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: DoNotSchedule
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: strix
+                app.kubernetes.io/instance: tyto-bqsu-strix-fixed-rate-1                           
+          - maxSkew: 1
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: DoNotSchedule
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: strix
+                app.kubernetes.io/instance: tyto-bqsu-strix-fixed-rate-1                        
+      containers:
+        - name: humio-strix-fixed-rate-1
+          image: "humio/humio-ingest-load-test:95ffa96db0a1e2f85bf595f8a0a970e01a14bc86"
+          envFrom:
+            - configMapRef:
+                name: strix-bqsu-fixedrate
+          env:
+            - name: HUMIO_TOKEN
+              # value: bc9ed0c0-a19f-4cbb-b6ea-d89fb28c3a1a
+              valueFrom:
+                secretKeyRef:
+                  name: east-logscale-strix-strix-local
+                  key: token
+            - name: HUMIO_BASE_URL
+              value: "https://logscale-east-inputs.gcp.dev.logsr.life"
+              # value: "http://east-logscale-ingest-only:8080"
+              # value: "https://tyto-bqsu.perf-internal.humio.net/api/v1/ingest/hec"
+          resources:
+            limits:
+              cpu: 2
+              memory: 1024Mi
+            requests:
+              cpu: 500m
+              memory: 512Mi
+                

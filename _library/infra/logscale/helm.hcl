@@ -97,7 +97,7 @@ inputs = {
 
   release          = local.codename
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.52"
+  chart_version    = "v7.0.0-next.57"
   namespace        = "${local.name}-${local.codename}"
   create_namespace = false
   project          = "${local.name}-${local.env}-${local.codename}-logscale"
@@ -114,9 +114,9 @@ humio:
   license: ${local.humio_license}
   
   # Signon
-  rootUser: ${local.humio_rootUser}
 
   auth:
+    rootUser: ${local.humio_rootUser}
     method: oauth
     # saml:
     #   idpCertificate: "${base64encode(local.humio_sso_idpCertificate)}"
@@ -127,7 +127,7 @@ humio:
       client_id: ${dependency.sso.outputs.application_id}
       client_secret_name: azuread-oidc
       client_secret_key: "oidc.azure.clientSecret"
-      groups_claim: humio-groups
+      # groups_claim: "groups"
       scopes: "openid,email,profile"
   extraENV:
     - name: MAX_SERIES_LIMIT
@@ -146,25 +146,30 @@ humio:
     prefixEnable: true
     strimziCluster: "${local.codename}-logscale"
     topicPrefix: ops
+    topics:
+      ingest:
+        retention:
+          bytes: 110000000000
     # externalKafkaHostname: "${local.codename}-logscale-kafka-bootstrap:9092"
 
   #Image is shared by all node pools
   image:
-    tag: 1.89.0--SNAPSHOT--build-423199--SHA-a5fb8c27a9f860a7d591a8dad518db11522cbb68
+    # tag: 1.89.0--SNAPSHOT--build-423199--SHA-a5fb8c27a9f860a7d591a8dad518db11522cbb68
+    tag: 1.93.0--SNAPSHOT--build-434317--SHA-a30bd49699d235e342f6c44fe2c85ca561a4a3e2
   # Primary Node pool used for digest/storage
   nodeCount: 3
   #In general for these node requests and limits should match
   resources:
     requests:
-      memory: 5Gi
-      cpu: 500m
+      memory: 24Gi
+      cpu: 6
     # limits:
     #   memory: 8Gi
     #   cpu: 2
 
-  digestPartitionsCount: 24
-  storagePartitionsCount: 6
-  targetReplicationFactor: 2
+  digestPartitionsCount: 48
+  storagePartitionsCount: 48
+  targetReplicationFactor: 1
 
   serviceAccount:
     name: "logscale-${local.codename}"
@@ -228,7 +233,7 @@ humio:
     accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        storage: "600Gi"
+        storage: "200Gi"
     storageClassName: "openebs-lvmpv"
   frontEndDataVolumePersistentVolumeClaimSpecTemplate:
     accessModes: ["ReadWriteOnce"]
@@ -260,14 +265,14 @@ humio:
           networking.gke.io/managed-certificates: cert-inputs-google-gke-managed-cert
   nodepools:
     ingest:
-      nodeCount: 3
+      nodeCount: 6
       resources:
         # limits:
         #   cpu: "500m"
         #   memory: 3Gi
         requests:
-          cpu: "100m"
-          memory: 1500Mi
+          cpu: "2"
+          memory: 6Gi
       tolerations:
         - key: "computeClass"
           operator: "Equal"
@@ -329,8 +334,8 @@ humio:
         #   cpu: "1"
         #   memory: 4Gi
         requests:
-          cpu: "100m"
-          memory: 2Gi
+          cpu: "250m"
+          memory: 6Gi
       tolerations:
         - key: "computeClass"
           operator: "Equal"
@@ -435,13 +440,13 @@ kafka:
   resources:
     requests:
       # Increase the memory as needed to support more than 5/TB day
-      memory: 2500Mi
+      memory: 4500Mi
       #Note the following resources are expected to support 1-3 TB/Day however
       # storage is sized for 1TB/day increase the storage to match the expected load
-      cpu: 100m
-    # limits:
-    #   memory: 3500Mi
-    #   cpu: 1
+      cpu: 1250m
+    limits:
+      cpu: 3
+      memory: 5Gi
   #(total ingest uncompressed per day / 5 ) * 3 / ReplicaCount
   # ReplicaCount must be odd and greater than 3 should be divisible by AZ
   # Example: 1 TB/Day '1/5*3/3=205' 3 Replcias may not survive a zone failure at peak
@@ -449,7 +454,7 @@ kafka:
   # 100 GB should be the smallest disk used for Kafka this may result in some waste
   storage:
     type: persistent-claim
-    size: 100Gi
+    size: 300Gi
     deleteClaim: true
     #Must be SSD or NVME like storage IOPs is the primary node constraint
     class: premium-rwo
@@ -495,7 +500,7 @@ zookeeper:
       effect: "NoSchedule"      
   resources:
     requests:
-      memory: 250Mi
+      memory: 350Mi
       cpu: "100m"
     # limits:
     #   memory: 284Mi

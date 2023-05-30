@@ -98,9 +98,9 @@ lvmNode:
   tolerations:
     - operator: "Exists"
   resources:
-      requests:
-          cpu: "500m"
-          memory: "64Mi"
+    requests:
+        cpu: "500m"
+        memory: "64Mi"
 EOF
   )
 

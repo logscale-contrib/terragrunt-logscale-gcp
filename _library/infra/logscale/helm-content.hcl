@@ -87,8 +87,8 @@ inputs = {
   project          = "${local.name}-${local.env}-${local.codename}-logscale"
 
   values = yamldecode(<<EOF
-fullnameOverride: ops-logscale
-managedClusterName: ops-logscale
+fullnameOverride: ${local.codename}-logscale
+managedClusterName: ${local.codename}-logscale
 repositoryDefault:
   ingestSizeInGB: "1073741824"
   storageSizeInGB: "1073741824"
@@ -260,6 +260,24 @@ repositories:
         parserName: kube-logging-pod
         eso:
           push: true        
+  - name: strix
+    parsers:
+      - name: strix
+        parserScript: |
+            /^(?<ts>[^ ]*) loglevel=(?<loglevel>[^ ]*) (?<message>.*) testField\d+=(?<testField>\d+) (?<data>.*)/
+            | parseTimestamp(field="ts") 
+            | drop([ts])
+        testData:
+            - |
+              2023-05-27T14:36:02.693Z loglevel=INFO hello world testField100=91 WzZos2POz7PWo4lZAPAq
+        tagFields:
+          - "testField"
+          - loglevel
+    ingestTokens:
+      - name: strix-local
+        parserName: strix
+        eso:
+          push: false        
 EOF
   )
 

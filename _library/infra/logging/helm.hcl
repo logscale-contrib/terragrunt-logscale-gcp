@@ -39,7 +39,7 @@ locals {
   # insecure_ssl: ${local.inputs.insecure_ssl}
   # protocol: ${local.inputs.protocol}
   # hec_port: ${local.inputs.port}
-  inputs_url   = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "ops-logscale-http-only.logscale-ops.svc.cluster.local" : "logscale-ops-inputs.${local.domain_name}"
+  inputs_url   = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "ops-logscale-ingest-only.logscale-ops.svc.cluster.local" : "logscale-ops-inputs.${local.domain_name}"
   insecure_ssl = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? true : false
   protocol     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "http" : "https"
   hec_port     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "8080" : "443"
@@ -331,6 +331,8 @@ fluentbit:
     - operator: "Exists"
 
 fluentd:
+  scaling:
+    replicas: 3
   resources:
     requests:
       cpu: "1"

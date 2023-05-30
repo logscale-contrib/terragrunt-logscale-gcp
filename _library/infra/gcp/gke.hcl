@@ -134,7 +134,7 @@ inputs = {
     },
     {
       name                                        = "nvme"
-      machine_type                                = "c2-standard-4"
+      machine_type                                = "c2-standard-8"
       min_count                                   = 1
       max_count                                   = 1
       local_nvme_ssd_block_config_local_ssd_count = 2
