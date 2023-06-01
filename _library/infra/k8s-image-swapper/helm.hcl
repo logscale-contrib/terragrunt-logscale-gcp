@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
+  source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
 }
 
 
@@ -39,15 +39,16 @@ locals {
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
-
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
+}
+dependency "registry" {
+  config_path = "${get_terragrunt_dir()}/../registry/"
 }
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project/",
-    "${get_terragrunt_dir()}/../sa/",
-    "${get_terragrunt_dir()}/../registry/"
+    "${get_terragrunt_dir()}/../../common/project-cluster/",
+    "${get_terragrunt_dir()}/../sa/"
   ]
 }
 
@@ -74,18 +75,16 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  uniqueName = "${local.name}-${local.codename}"
-
-  destination_name = local.destination_name
+  name = "k8s-image-swapper"
 
   repository = "https://estahn.github.io/charts/"
 
-  release          = local.codename
+  release          = "ops"
   chart            = "k8s-image-swapper"
   chart_version    = "1.6.1"
   namespace        = "k8s-image-swapper"
-  create_namespace = false
-  project          = "${local.name}-${local.env}-${local.codename}-common"
+  create_namespace = true
+  project          = "common"
 
 
   values = yamldecode(<<EOF
@@ -93,7 +92,7 @@ image:
   tag: 1.5.1
 serviceAccount:
   create: false
-  name: k8s-image-swapper-${local.name}-${local.codename}
+  name: k8s-image-swapper
 config:
   dryRun: false
   logLevel: debug
@@ -114,9 +113,9 @@ config:
     aws:
       disable: true
     gcp:
-      location: ${local.region}
+      location: ${dependency.k8s.outputs.location}
       projectId: ${local.project_id}
-      repositoryId: ${local.name}-${local.env}-${local.codename}
+      repositoryId: ${dependency.registry.outputs.repository_id}
 patch:
   enabled: false
 certmanager:

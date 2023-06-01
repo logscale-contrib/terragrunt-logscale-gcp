@@ -64,7 +64,8 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name                            = "k8s-image-swapper-${local.name}-${local.codename}"
+  gcp_sa_name                     = join("-", compact(["k8s-image-swapper", dependency.k8s.outputs.name]))
+  name                            = "k8s-image-swapper"
   namespace                       = "k8s-image-swapper"
   project_id                      = local.project_id
   roles                           = ["roles/artifactregistry.writer", "roles/artifactregistry.reader"]

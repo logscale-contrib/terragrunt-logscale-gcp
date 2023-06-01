@@ -17,6 +17,7 @@ terraform {
 # Locals are named constants that are reusable within the configuration.
 # ---------------------------------------------------------------------------------------------------------------------
 locals {
+  uniqueName = "${local.name}-${local.codename}"
 
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id

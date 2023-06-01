@@ -47,21 +47,18 @@ dependencies {
     "${get_terragrunt_dir()}/../../common/project-ops/"
   ]
 }
-
-generate "provider_gke" {
-  path      = "provider_gke.tf"
+generate "provider_k8s" {
+  path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-
-provider "helm" {
-  kubernetes {
+provider "kubernetes" {
+  
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       args        = []
       command     = "gke-gcloud-auth-plugin"
-    }
   }
 }
 EOF
@@ -76,15 +73,15 @@ inputs = {
 
   repository = "https://logscale-contrib.github.io/helm-google-gke-managed-cert/"
 
-  release          = "ops"
+  release          = "ops-grafna-cert"
   chart            = "google-gke-managed-cert"
   chart_version    = "1.0.3"
-  namespace        = "argocd"
+  namespace        = "monitoring"
   create_namespace = true
   project          = "ops"
 
-  values = [<<EOF
+  values = yamldecode(<<EOF
 domains: ["${local.host_name}.${local.domain_name}"]
-EOF 
-  ]
+EOF
+  )
 }

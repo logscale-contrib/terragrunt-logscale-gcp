@@ -63,8 +63,8 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  source                          = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
-  name                            = "external-secrets-${local.name}-${local.codename}"
+  gcp_sa_name = join("-", compact(["external-secrets", dependency.k8s.outputs.name]))
+  name                            = "external-secrets"
   namespace                       = "external-secrets"
   project_id                      = local.project_id
   roles                           = ["roles/secretmanager.admin"]

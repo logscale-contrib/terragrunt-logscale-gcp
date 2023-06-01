@@ -63,7 +63,6 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  source      = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
   gcp_sa_name = join("-", compact(["external-dns", dependency.k8s.outputs.name]))
   name        = "external-dns"
 

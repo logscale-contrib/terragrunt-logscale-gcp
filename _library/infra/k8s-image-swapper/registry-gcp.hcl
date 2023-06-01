@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-google-registry.git?ref=v1.0.1"
+  source = "git::https://github.com/logscale-contrib/terraform-google-registry.git?ref=v1.1.1"
 }
 
 
@@ -44,7 +44,7 @@ dependency "k8s" {
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
   project_id = local.project_id
-  name       = "${local.name}-${local.env}-${local.codename}"
-  region     = local.gcp_vars.locals.region
+  name       = dependency.k8s.outputs.name
+  region     = dependency.k8s.outputs.location
 
 } 

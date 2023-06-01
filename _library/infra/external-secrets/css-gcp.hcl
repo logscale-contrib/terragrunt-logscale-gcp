@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-generic-manifest.git?ref=v1.0.0"
+  source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
 }
 
 
@@ -34,7 +34,6 @@ locals {
   domain_name = local.dns.locals.domain_name
 
   destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
-
 }
 
 
@@ -42,10 +41,10 @@ dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 
+
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project/",
-    "${get_terragrunt_dir()}/../sa/"
+    "${get_terragrunt_dir()}/../../common/project-cluster/"
   ]
 }
 generate "provider_k8s" {
@@ -53,8 +52,7 @@ generate "provider_k8s" {
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
 provider "kubernetes" {
-  
-    host                   = "https://${dependency.k8s.outputs.endpoint}"    
+    host                   = "https://${dependency.k8s.outputs.endpoint}"
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
@@ -70,16 +68,27 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+  name = "clustersecretstore"
 
-  manifest = <<EOF
-apiVersion: external-secrets.io/v1beta1
-kind: ClusterSecretStore
-metadata:
-  name: global
-spec:
-  provider:
-    gcpsm:
-      projectID: ${local.gcp_vars.locals.project_id}
+  repository = "https://logscale-contrib.github.io/helm-external-secrets-cluster-secret-store"
+
+  release          = "ops"
+  chart            = "clustersecretstore"
+  chart_version    = "1.0.1"
+  namespace        = "kube-system"
+  create_namespace = true
+  project          = "common"
+  skipCrds         = false
+
+
+  values = yamldecode(<<EOF
+provider:
+  gcpsm:
+    projectID: ${local.gcp_vars.locals.project_id}
 EOF
+  )
 
+  ignoreDifferences = [
+  ]
 }
+
