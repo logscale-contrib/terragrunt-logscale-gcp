@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: external-dns
+  namespace: argocd
+spec:
+  generators:
+    - clusters: {}
+  template:
+    metadata:
+      name: "{{name}}-external-dns" # 'name' field of the Secret
+    spec:
+      project: "common"
+      source:
+        chart: external-dns
+        helm:
+          releaseName: ops
+          skipCrds: true
+          values: '{"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"kubernetes.io/os","operator":"In","values":["linux"]},{"key":"iam.gke.io/gke-metadata-server-enabled","operator":"In","values":["true"]}]}]}}},"google":{"project":"logsr-life-production","zoneVisibility":"public"},"logFormat":"json","provider":"google","replicaCount":2,"resources":{"requests":{"cpu":"50m","memory":"50Mi"}},"serviceAccount":{"automountServiceAccountToken":true,"create":false,"name":"external-dns"},"tolerations":[{"key":"CriticalAddonsOnly","operator":"Exists"}],"topologySpreadConstraints":[{"maxSkew":1,"topologyKey":"topology.kubernetes.io/zone","whenUnsatisfiable":"DoNotSchedule"}],"txtOwnerId":".gcp.logsr.life"}'
+        repoURL: https://charts.bitnami.com/bitnami
+        targetRevision: 6.5.*
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=false
+        - ServerSideApply=true
+      destination:
+        server: "{{server}}" # 'server' field of the secret
+        namespace: external-dns

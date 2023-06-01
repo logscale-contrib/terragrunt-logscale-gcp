@@ -29,10 +29,12 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
+
+
 }
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../gcp-us-ops/gke/"
 }
 dependency "k8sEdge" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
@@ -62,8 +64,13 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name   = "${local.name}-${local.env}-${local.codename}"
+  name   = dependency.k8sEdge.outputs.name
   server = "https://${dependency.k8sEdge.outputs.endpoint}"
   token  = dependency.manager.outputs.token
   caData = dependency.k8sEdge.outputs.ca_certificate
+
+  cloud       = "gcp"
+  region      = dependency.k8sEdge.outputs.location
+  clusterRole = "tenant"
+
 }

@@ -10,8 +10,9 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-generic-manifest.git?ref=v1.0.0"
+  source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
 }
+
 
 
 locals {
@@ -40,14 +41,15 @@ locals {
 
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
+
 }
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project/",
-    "${get_terragrunt_dir()}/../../external-secrets/helm/",
+    "${get_terragrunt_dir()}/../../common/project-cluster/"
   ]
 }
+
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
@@ -70,13 +72,21 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+  name = "lvm-storageclass"
 
-  manifest = <<EOF
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: lvmpv
-allowVolumeExpansion: true
+  repository = "https://logscale-contrib.github.io/helm-k8s-storageclass"
+
+  release          = "ops"
+  chart            = "storageclass"
+  chart_version    = "1.0.3"
+  namespace        = "kube-system"
+  create_namespace = false
+  project          = "common"
+  skipCrds         = false
+
+
+  values = yamldecode(<<EOF
+nameOverride: lvmpv
 parameters:
   storage: "lvm"
   volgroup: "instancestore"
@@ -87,5 +97,6 @@ allowedTopologies:
     values:
       - nvme
 EOF
+  )
 
 }

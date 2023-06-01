@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "tfr:///terraform-module/release/helm?version=2.8.0"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ dependency "k8s" {
 }
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../ns/"
+    "${get_terragrunt_dir()}/../../common/project-ops/"
   ]
 }
 generate "provider_gke" {
@@ -71,19 +71,17 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  namespace  = "argocd"
+  destination_name = "in-cluster"
+
   repository = "https://logscale-contrib.github.io/helm-google-gke-managed-cert/"
 
-  app = {
-    name             = "cert"
-    create_namespace = true
+  release          = "ops"
+  chart            = "google-gke-managed-cert"
+  chart_version    = "1.0.3"
+  namespace        = "argocd"
+  create_namespace = true
+  project          = "ops"
 
-    chart   = "google-gke-managed-cert"
-    version = "1.0.3"
-
-    wait   = false
-    deploy = 1
-  }
   values = [<<EOF
 domains: ["${local.host_name}.${local.domain_name}"]
 EOF 

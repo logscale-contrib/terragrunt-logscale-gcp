@@ -46,7 +46,8 @@ dependencies {
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  network_name = "${local.name}-${local.env}-${local.codename}"
+  network_name = join("-", compact([local.codename, local.env, local.name]))
+  # "${local.name}-${local.env}-${local.codename}"
   routing_mode = "GLOBAL"
   project_id   = local.project_id
 

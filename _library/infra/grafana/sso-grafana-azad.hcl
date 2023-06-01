@@ -42,11 +42,7 @@ locals {
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
-dependencies {
-  paths = [
-    "${get_terragrunt_dir()}/../ns/"
-  ]
-}
+
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"

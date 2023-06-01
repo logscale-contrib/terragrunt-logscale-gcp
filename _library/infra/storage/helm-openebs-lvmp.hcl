@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
+  source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
 }
 
 
@@ -38,16 +38,19 @@ locals {
 }
 
 
+
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 
 }
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project/"
+    "${get_terragrunt_dir()}/../../common/project-cluster/"
   ]
 }
+
+
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
@@ -70,9 +73,7 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  uniqueName = "${local.name}-${local.codename}"
-
-  destination_name = local.destination_name
+  name = "lvm-localpv"
 
   repository = "https://openebs.github.io/lvm-localpv"
 
@@ -81,7 +82,7 @@ inputs = {
   chart_version    = "1.0.1"
   namespace        = "kube-system"
   create_namespace = false
-  project          = "${local.name}-${local.env}-${local.codename}-common"
+  project          = "common"
   skipCrds         = false
 
 

@@ -47,10 +47,10 @@ inputs = {
   release_channel = "RAPID"
 
   project_id             = local.project_id
-  name                   = "${local.name}-${local.env}-${local.codename}"
+  name                   = dependency.vpc.outputs.network_name
   regional               = true
   region                 = local.gcp_vars.locals.region
-  network                = "${local.name}-${local.env}-${local.codename}"
+  network                = dependency.vpc.outputs.network_name
   subnetwork             = "k8s"
   ip_range_pods          = "pods"
   ip_range_services      = "svc"
@@ -72,6 +72,13 @@ inputs = {
   #   "min_cpu_cores" : 2,
   #   "min_memory_gb" : 2
   # }
+
+  logging_enabled_components = [
+    "SYSTEM_COMPONENTS",
+    "APISERVER",
+    "CONTROLLER_MANAGER",
+    "SCHEDULER"
+  ]
 
   node_pools = [
     # {
@@ -135,9 +142,9 @@ inputs = {
     {
       name                                        = "nvme"
       machine_type                                = "c2-standard-8"
-      min_count                                   = 1
+      min_count                                   = 0
       max_count                                   = 1
-      local_nvme_ssd_block_config_local_ssd_count = 2
+      local_nvme_ssd_block_config_local_ssd_count = 1
       # disk_size_gb       = 30
       # disk_type          = "pd-standard"
       # accelerator_count  = 1

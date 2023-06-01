@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
+  source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
 }
 
 
@@ -33,19 +33,19 @@ locals {
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+  # destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
 
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 
 }
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project/",
+    "${get_terragrunt_dir()}/../../common/project-cluster/",
     "${get_terragrunt_dir()}/../sa/"
   ]
 }
@@ -71,18 +71,18 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  uniqueName = "${local.name}-${local.codename}"
+  name = "external-dns"
 
-  destination_name = local.destination_name
+  # destination_name = local.destination_name
 
   repository = "https://charts.bitnami.com/bitnami"
 
-  release          = local.codename
+  release          = "ops"
   chart            = "external-dns"
   chart_version    = "6.5.*"
   namespace        = "external-dns"
   create_namespace = false
-  project          = "${local.name}-${local.env}-${local.codename}-common"
+  project          = "common"
 
 
   values = yamldecode(<<EOF
@@ -123,8 +123,8 @@ replicaCount: 2
 serviceAccount:
   create: false
   automountServiceAccountToken: true
-  name: external-dns-${local.name}-${local.codename}
-txtOwnerId: "${local.codename}.${local.domain_name}"
+  name: external-dns
+txtOwnerId: ${local.project_id}
 
 EOF
   )

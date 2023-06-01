@@ -46,7 +46,7 @@ generate "provider_k8s" {
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
 provider "kubernetes" {
-  
+
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
@@ -63,8 +63,10 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  source                          = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
-  name                            = "external-dns-${local.name}-${local.codename}"
+  source      = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
+  gcp_sa_name = join("-", compact(["external-dns", dependency.k8s.outputs.name]))
+  name        = "external-dns"
+
   namespace                       = "external-dns"
   project_id                      = local.project_id
   roles                           = ["roles/dns.admin"]
