@@ -118,7 +118,7 @@ leaderElect: true
 serviceAccount:
   create: false
   automount: true
-  name: external-secrets-${local.name}-${local.codename}
+  name: external-secrets
 certController:
   resources:
     requests: 
