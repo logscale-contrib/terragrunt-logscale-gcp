@@ -54,17 +54,16 @@ dependency "bucket" {
 dependency "sso" {
   config_path = "${get_terragrunt_dir()}/../sso/"
 }
+dependency "sa1" {
+  config_path = "${get_terragrunt_dir()}/../../sa/sa-1/"
+}
+dependency "sa2" {
+  config_path = "${get_terragrunt_dir()}/../../sa/sa-2/"
+}
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../project/",
-    "${get_terragrunt_dir()}/../ns/",
     "${get_terragrunt_dir()}/../cert-gke-inputs/",
     "${get_terragrunt_dir()}/../cert-gke-ui/",
-    "${get_terragrunt_dir()}/../../logscale-operator/helm/",
-    "${get_terragrunt_dir()}/../../strimzi-operator/helm/",
-    "${get_terragrunt_dir()}/../../otel-operator/helm/",
-    "${get_terragrunt_dir()}/../../external-secrets/helm/",
-
   ]
 }
 generate "provider_k8s" {
@@ -173,7 +172,7 @@ humio:
   targetReplicationFactor: 1
 
   serviceAccount:
-    name: "logscale-${local.codename}"
+    name: "logscale"
       
   tolerations:
     - key: "computeClass"

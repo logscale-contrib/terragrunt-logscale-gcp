@@ -54,22 +54,14 @@ dependency "k8s" {
 dependency "bucket" {
   config_path = "${get_terragrunt_dir()}/../bucket/"
 }
-dependency "ns" {
-  config_path = "${get_terragrunt_dir()}/../ns/"
-}
 dependency "sso" {
   config_path = "${get_terragrunt_dir()}/../sso/"
 }
+
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../ns/",
     "${get_terragrunt_dir()}/../cert-gke-inputs/",
-    "${get_terragrunt_dir()}/../cert-gke-ui/",
-    "${get_terragrunt_dir()}/../../logscale-operator/helm/",
-    "${get_terragrunt_dir()}/../../strimzi-operator/helm/",
-    "${get_terragrunt_dir()}/../../otel-operator/helm/",
-    "${get_terragrunt_dir()}/../../external-secrets/helm/",
-
+    "${get_terragrunt_dir()}/../cert-gke-ui/"
   ]
 }
 generate "provider_k8s" {
