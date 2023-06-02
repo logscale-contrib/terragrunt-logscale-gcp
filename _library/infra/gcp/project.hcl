@@ -75,6 +75,7 @@ inputs = {
     "storage-api.googleapis.com",
     "storage-component.googleapis.com",
     "storage.googleapis.com",
-    "storageinsights.googleapis.com"
+    "storageinsights.googleapis.com",
+    "containersecurity.googleapis.com"
   ]
 }

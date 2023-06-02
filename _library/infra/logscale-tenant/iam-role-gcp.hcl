@@ -33,33 +33,13 @@ locals {
   codename = local.environment_vars.locals.codename
 
 }
-dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../gke/"
+dependency "sa1" {
+  config_path = "${get_terragrunt_dir()}/../sa/sa-1/"
 }
-dependency "sa" {
-  config_path = "${get_terragrunt_dir()}/../sa/"
+dependency "sa2" {
+  config_path = "${get_terragrunt_dir()}/../sa/sa-2/"
 }
-dependencies {
-  paths = [
-    "${get_terragrunt_dir()}/../ns/"
-  ]
-}
-generate "provider_k8s" {
-  path      = "provider_k8s.tf"
-  if_exists = "overwrite_terragrunt"
-  contents  = <<EOF
-provider "kubernetes" {
-  
-    host                   = "https://${dependency.k8s.outputs.endpoint}"    
-    cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = []
-      command     = "gke-gcloud-auth-plugin"
-  }
-}
-EOF
-}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # MODULE PARAMETERS
 # These are the variables we have to pass in to use the module. This defines the parameters that are common across all
@@ -68,13 +48,15 @@ EOF
 inputs = {
   target_level = "project"
   target_id    = local.project_id
-  role_id      = "${local.name}_${local.codename}_sa"
-  title        = "${local.name}-${local.codename}-sa"
+  role_id      = "${local.name}_${local.codename}_signblob"
+  title        = "Logscale Export function support"
   description  = "Grants access to signblobs for export"
   #   base_roles           = ["roles/iam.serviceAccountAdmin"]
   permissions = ["iam.serviceAccounts.signBlob"]
   #   excluded_permissions = ["iam.serviceAccounts.setIamPolicy"]
-  members = ["serviceAccount:${dependency.sa.outputs.gcp_service_account_email}"]
-
+  members = [
+    "serviceAccount:${dependency.sa1.outputs.gcp_service_account_email}",
+    "serviceAccount:${dependency.sa2.outputs.gcp_service_account_email}"
+    ]
 
 } 
