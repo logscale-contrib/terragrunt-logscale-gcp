@@ -70,7 +70,7 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name            = "external-secrets"
+  name = "external-secrets"
 
 
   repository = "https://charts.external-secrets.io"

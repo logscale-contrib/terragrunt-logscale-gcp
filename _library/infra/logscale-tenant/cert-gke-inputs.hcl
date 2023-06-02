@@ -10,8 +10,9 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-namespace.git?ref=v1.1.0"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Locals are named constants that are reusable within the configuration.
 # ---------------------------------------------------------------------------------------------------------------------
@@ -29,17 +30,26 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
+
+  dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
+  domain_name = local.dns.locals.domain_name
+
 }
 
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
-
+dependencies {
+  paths = [
+    "${get_terragrunt_dir()}/../../common/project-ops/"
+  ]
+}
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-provider "kubernetes" {  
+provider "kubernetes" {
+  
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
@@ -49,15 +59,25 @@ provider "kubernetes" {
   }
 }
 EOF
-}
-# ---------------------------------------------------------------------------------------------------------------------
+} # ---------------------------------------------------------------------------------------------------------------------
 # MODULE PARAMETERS
 # These are the variables we have to pass in to use the module. This defines the parameters that are common across all
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name = "argocd"
-  annotations = {
-    "linkerd.io/inject" = "enabled"
-  }
+  destination_name = "in-cluster"
+
+  repository = "https://logscale-contrib.github.io/helm-google-gke-managed-cert/"
+
+  release          = "cert-inputs"
+  chart            = "google-gke-managed-cert"
+  chart_version    = "1.0.3"
+  namespace        = "${local.name}-${local.codename}"
+  create_namespace = true
+  project          = "ops"
+
+  values = yamldecode(<<EOF
+domains: ["logscale-${local.codename}-inputs.${local.domain_name}"]
+EOF
+  )
 }

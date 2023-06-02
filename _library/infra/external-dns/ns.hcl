@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-namespace.git?ref=v1.0.1"
+  source = "git::https://github.com/logscale-contrib/terraform-k8s-namespace.git?ref=v1.1.0"
 }
 # ---------------------------------------------------------------------------------------------------------------------
 # Locals are named constants that are reusable within the configuration.

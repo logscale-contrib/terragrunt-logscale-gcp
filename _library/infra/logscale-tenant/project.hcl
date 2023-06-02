@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-namespace.git?ref=v1.1.0"
+  source = "git::https://github.com/logscale-contrib/terraform-kubernetes-argocd-project.git"
 }
 # ---------------------------------------------------------------------------------------------------------------------
 # Locals are named constants that are reusable within the configuration.
@@ -29,17 +29,29 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
+  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+
 }
 
+
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../gcp-us-ops/gke/"
 }
+
+dependencies {
+  paths = [
+    "${get_terragrunt_dir()}/../../argocd/helm/",
+    "${get_terragrunt_dir()}/../../../gke/"
+  ]
+}
+
 
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-provider "kubernetes" {  
+provider "kubernetes" {
+  
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
@@ -56,8 +68,35 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name = "argocd"
-  annotations = {
-    "linkerd.io/inject" = "enabled"
-  }
+  name        = "${local.name}-${local.env}-${local.codename}-logscale"
+  namespace   = "argocd"
+  description = "Used for cluster wide resources"
+  repository  = "https://argoproj.github.io/argo-helm"
+
+  destinations = [
+    {
+      name      = local.destination_name
+      namespace = "*"
+      server    = "*"
+    }
+  ]
+  namespaceResourceWhitelist = [
+    {
+      "group" : "*"
+      "kind" : "*"
+    }
+  ]
+  cluster_resource_whitelist = [
+    {
+      "group" : "rbac.authorization.k8s.io"
+      "kind" : "ClusterRole"
+    },
+    {
+      "group" : "rbac.authorization.k8s.io"
+      "kind" : "ClusterRoleBinding"
+    }
+  ]
+  "sourceRepos" = [
+    "*",
+  ]
 }

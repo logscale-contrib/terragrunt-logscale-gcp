@@ -63,7 +63,7 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  gcp_sa_name = join("-", compact(["external-secrets", dependency.k8s.outputs.name]))
+  gcp_sa_name                     = join("-", compact(["external-secrets", dependency.k8s.outputs.name]))
   name                            = "external-secrets"
   namespace                       = "external-secrets"
   project_id                      = local.project_id

@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
+  source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
 }
 
 
@@ -39,20 +39,26 @@ locals {
   # insecure_ssl: ${local.inputs.insecure_ssl}
   # protocol: ${local.inputs.protocol}
   # hec_port: ${local.inputs.port}
-  inputs_url   = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "ops-logscale-ingest-only.logscale-ops.svc.cluster.local" : "logscale-ops-inputs.${local.domain_name}"
-  insecure_ssl = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? true : false
-  protocol     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "http" : "https"
-  hec_port     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "8080" : "443"
+
+  # inputs_url   = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "ops-logscale-ingest-only.logscale-ops.svc.cluster.local" : "logscale-ops-inputs.${local.domain_name}"
+  # insecure_ssl = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? true : false
+  # protocol     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "http" : "https"
+  # hec_port     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "8080" : "443"
+  inputs_url   =   format("%s.%s",join("-", compact(["logscale", local.codename,local.name,"inputs"])),local.domain_name)
+  insecure_ssl = false
+  protocol     = "https"
+  hec_port     = "443" 
+  
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 
 }
-
 dependencies {
   paths = [
+    "${get_terragrunt_dir()}/../../common/project-cluster/",
     "${get_terragrunt_dir()}/../secrets/"
   ]
 }
@@ -78,18 +84,16 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  uniqueName = "${local.name}-${local.codename}"
-
-  destination_name = local.destination_name
+  name = "logging-operator-logging"
 
   repository = "https://kube-logging.github.io/helm-charts"
 
-  release          = local.codename
+  release          = "ops"
   chart            = "logging-operator-logging"
   chart_version    = "4.1.0"
   namespace        = "logging"
   create_namespace = false
-  project          = "${local.name}-${local.env}-${local.codename}-common"
+  project          = "common"
 
   values = yamldecode(<<EOF
 nameOverride: logops
@@ -142,8 +146,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cwd.cid: "244466666888888899999999"
-            - cluster_name: ${local.name}-${local.env}-${local.codename}
+            - cluster_name: "{{name}}"
       match:
       - select:
           labels:
@@ -157,8 +160,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cwd.cid: "244466666888888899999999"    
-            - cluster_name: ${local.name}-${local.env}-${local.codename}
+            - cluster_name: "{{name}}"
       match:
       - select:
           labels:
@@ -172,8 +174,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cwd.cid: "244466666888888899999999"    
-            - cluster_name: ${local.name}-${local.env}-${local.codename}
+            - cluster_name: "{{name}}"
       match:
       - exclude:
           labels:
@@ -219,8 +220,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cwd.cid: "244466666888888899999999"    
-            - cluster_name: ${local.name}-${local.env}-${local.codename}   
+            - cluster_name: "{{name}}"
       match:
       - exclude:
           namespaces:

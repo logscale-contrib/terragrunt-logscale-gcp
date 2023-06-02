@@ -9,9 +9,12 @@
 # working directory, into a temporary folder, and execute your Terraform commands in that folder. If any environment
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
+
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-namespace.git?ref=v1.1.0"
+  source = "tfr:///terraform-google-modules/kubernetes-engine/google//modules/workload-identity?version=26.0.0"
 }
+
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Locals are named constants that are reusable within the configuration.
 # ---------------------------------------------------------------------------------------------------------------------
@@ -30,16 +33,34 @@ locals {
   codename = local.environment_vars.locals.codename
 
 }
-
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
+}
+dependency "ns" {
+  config_path = "${get_terragrunt_dir()}/../ns/"
+}
+
+generate "provider_gcp" {
+  path      = "provider_gcp.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<-EOF
+provider "google" {
+  project     = "${local.project_id}"
+  region = "${local.region}"
+}
+provider "google-beta" {
+  project     = "${local.project_id}"
+  region = "${local.region}"
+}  
+  EOF
 }
 
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-provider "kubernetes" {  
+provider "kubernetes" {
+  
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
@@ -56,8 +77,10 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name = "argocd"
-  annotations = {
-    "linkerd.io/inject" = "enabled"
-  }
-}
+  gcp_sa_name = join("-", compact([local.name, local.codename, dependency.k8s.outputs.name]))
+
+  name                            = "logscale"
+  namespace                       = dependency.ns.outputs.name
+  project_id                      = local.project_id
+  automount_service_account_token = true
+} 

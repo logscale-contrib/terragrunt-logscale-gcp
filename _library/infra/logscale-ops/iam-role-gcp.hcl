@@ -9,9 +9,12 @@
 # working directory, into a temporary folder, and execute your Terraform commands in that folder. If any environment
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
+
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-namespace.git?ref=v1.1.0"
+  source = "tfr:///terraform-google-modules/iam/google//modules/custom_role_iam?version=7.6.0"
 }
+
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Locals are named constants that are reusable within the configuration.
 # ---------------------------------------------------------------------------------------------------------------------
@@ -30,16 +33,23 @@ locals {
   codename = local.environment_vars.locals.codename
 
 }
-
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
-
+dependency "sa" {
+  config_path = "${get_terragrunt_dir()}/../sa/"
+}
+dependencies {
+  paths = [
+    "${get_terragrunt_dir()}/../ns/"
+  ]
+}
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-provider "kubernetes" {  
+provider "kubernetes" {
+  
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
@@ -56,8 +66,15 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name = "argocd"
-  annotations = {
-    "linkerd.io/inject" = "enabled"
-  }
-}
+  target_level = "project"
+  target_id    = local.project_id
+  role_id      = replace(join("_", compact([local.name, local.codename, "signBlob", dependency.k8s.outputs.name])), "-", "")
+  title        = "Logscale Export function support"
+  description  = "Grants access to signblobs for export"
+  #   base_roles           = ["roles/iam.serviceAccountAdmin"]
+  permissions = ["iam.serviceAccounts.signBlob"]
+  #   excluded_permissions = ["iam.serviceAccounts.setIamPolicy"]
+  members = ["serviceAccount:${dependency.sa.outputs.gcp_service_account_email}"]
+
+
+} 

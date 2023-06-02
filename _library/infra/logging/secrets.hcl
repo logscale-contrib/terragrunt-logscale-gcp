@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-generic-manifest.git?ref=v1.0.0"
+  source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
 }
 
 
@@ -44,7 +44,7 @@ dependency "k8s" {
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project/",
+    "${get_terragrunt_dir()}/../../common/project-cluster/",
     "${get_terragrunt_dir()}/../../external-secrets/helm/",
   ]
 }
@@ -70,79 +70,103 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+  name       = "logging-secrets"
+  repository = "https://bedag.github.io/helm-charts/"
 
-  manifest = <<EOF
-apiVersion: external-secrets.io/v1beta1
-kind: ExternalSecret
-metadata:
-  name: ops-logscale-apps-kubernetes-cluster-local-pod
-  namespace: logging
-spec:
-  refreshInterval: 1h
-  secretStoreRef:
-    name: global
-    kind: ClusterSecretStore
-  target:
-    name: ops-logscale-apps-kubernetes-cluster-local-pod
-    creationPolicy: Owner
-  data:
-  - secretKey: token
-    remoteRef:
-      key: ops-logscale-apps-kubernetes-cluster-local-pod
----
-apiVersion: external-secrets.io/v1beta1
-kind: ExternalSecret
-metadata:
-  name: ops-logscale-infra-kubernetes-cluster-local-event
-  namespace: logging
-spec:
-  refreshInterval: 1h
-  secretStoreRef:
-    name: global
-    kind: ClusterSecretStore
-  target:
-    name: ops-logscale-infra-kubernetes-cluster-local-event
-    creationPolicy: Owner
-  data:
-  - secretKey: token
-    remoteRef:
-      key: ops-logscale-infra-kubernetes-cluster-local-event
----
-apiVersion: external-secrets.io/v1beta1
-kind: ExternalSecret
-metadata:
-  name: ops-logscale-infra-kubernetes-cluster-local-host
-  namespace: logging
-spec:
-  refreshInterval: 1h
-  secretStoreRef:
-    name: global
-    kind: ClusterSecretStore
-  target:
-    name: ops-logscale-infra-kubernetes-cluster-local-host
-    creationPolicy: Owner
-  data:
-  - secretKey: token
-    remoteRef:
-      key: ops-logscale-infra-kubernetes-cluster-local-host      
----
-apiVersion: external-secrets.io/v1beta1
-kind: ExternalSecret
-metadata:
-  name: ops-logscale-infra-kubernetes-cluster-local-pod
-  namespace: logging
-spec:
-  refreshInterval: 1h
-  secretStoreRef:
-    name: global
-    kind: ClusterSecretStore
-  target:
-    name: ops-logscale-infra-kubernetes-cluster-local-pod
-    creationPolicy: Owner
-  data:
-  - secretKey: token
-    remoteRef:
-      key: ops-logscale-infra-kubernetes-cluster-local-pod      
+  release          = "ops"
+  chart            = "raw"
+  chart_version    = "2.0.0"
+  namespace        = "logging"
+  create_namespace = true
+  project          = "common"
+  skipCrds         = false
+
+  values = yamldecode(<<EOF
+templates:
+  - |
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    metadata:
+      name: ops-logscale-apps-kubernetes-cluster-local-pod
+      namespace: logging
+    spec:
+      refreshInterval: 1h
+      secretStoreRef:
+        name: ops
+        kind: ClusterSecretStore
+      target:
+        name: ops-logscale-apps-kubernetes-cluster-local-pod
+        creationPolicy: Owner
+      data:
+      - secretKey: token
+        remoteRef:
+          conversionStrategy: Default	
+          decodingStrategy: None
+          key: ops-logscale-apps-kubernetes-cluster-local-pod
+  - |
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    metadata:
+      name: ops-logscale-infra-kubernetes-cluster-local-event
+      namespace: logging
+    spec:
+      refreshInterval: 1h
+      secretStoreRef:
+        name: ops
+        kind: ClusterSecretStore
+      target:
+        name: ops-logscale-infra-kubernetes-cluster-local-event
+        creationPolicy: Owner
+      data:
+      - secretKey: token
+        remoteRef:
+          conversionStrategy: Default	
+          decodingStrategy: None
+          key: ops-logscale-infra-kubernetes-cluster-local-event
+  - |
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    metadata:
+      name: ops-logscale-infra-kubernetes-cluster-local-host
+      namespace: logging
+    spec:
+      refreshInterval: 1h
+      secretStoreRef:
+        name: ops
+        kind: ClusterSecretStore
+      target:
+        name: ops-logscale-infra-kubernetes-cluster-local-host
+        creationPolicy: Owner
+      data:
+      - secretKey: token
+        remoteRef:
+          conversionStrategy: Default	
+          decodingStrategy: None
+          key: ops-logscale-infra-kubernetes-cluster-local-host      
+  - |
+    apiVersion: external-secrets.io/v1beta1
+    kind: ExternalSecret
+    metadata:
+      name: ops-logscale-infra-kubernetes-cluster-local-pod
+      namespace: logging
+    spec:
+      refreshInterval: 1h
+      secretStoreRef:
+        name: ops
+        kind: ClusterSecretStore
+      target:
+        name: ops-logscale-infra-kubernetes-cluster-local-pod
+        creationPolicy: Owner
+      data:
+      - secretKey: token
+        remoteRef:
+          conversionStrategy: Default	
+          decodingStrategy: None
+          key: ops-logscale-infra-kubernetes-cluster-local-pod   
+ 
 EOF
+  )
 
+  ignoreDifferences = [
+  ]
 }

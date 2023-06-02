@@ -10,8 +10,9 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-namespace.git?ref=v1.1.0"
+  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v1.4.9"
 }
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Locals are named constants that are reusable within the configuration.
 # ---------------------------------------------------------------------------------------------------------------------
@@ -29,17 +30,26 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
+
+  dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
+  domain_name = local.dns.locals.domain_name
+
+  fqdn = format("%s.%s",join("-", compact(["logscale", local.codename,local.name])),local.domain_name)
 }
+
 
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
-
+dependency "ns" {
+  config_path = "${get_terragrunt_dir()}/../ns/"
+}
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-provider "kubernetes" {  
+provider "kubernetes" {
+  
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
@@ -56,8 +66,33 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name = "argocd"
-  annotations = {
-    "linkerd.io/inject" = "enabled"
-  }
+
+  name = local.fqdn
+  identifier_uris = [
+    "https://${local.fqdn}"
+  ]
+
+  web = [{
+    homepage_url = "https://${local.fqdn}"
+    logout_url   = "https://${local.fqdn}/logout"
+    redirect_uris = [
+      "https://${local.fqdn}/auth/oidc"
+    ]
+  }]
+
+  secret_name      = "azuread-oidc"
+  secret_namespace = dependency.ns.outputs.name
+  secret_key       = "oidc.azure.clientSecret"
+
+
+  assigned_groups = [
+    {
+      #display_name = "consultant",
+      group_id = "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415"
+    },
+    {
+      #display_name = "tech-lead",
+      group_id = "9e9e711b-9028-472f-a966-7ed7e0b704ae"
+    }
+  ]
 }

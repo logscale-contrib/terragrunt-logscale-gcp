@@ -17,6 +17,7 @@ terraform {
 # ---------------------------------------------------------------------------------------------------------------------
 locals {
 
+
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
@@ -35,11 +36,13 @@ dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 
+
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-provider "kubernetes" {  
+provider "kubernetes" {
+  
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
@@ -56,8 +59,5 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name = "argocd"
-  annotations = {
-    "linkerd.io/inject" = "enabled"
-  }
+  name = join("-", compact(["logscale", local.name]))
 }

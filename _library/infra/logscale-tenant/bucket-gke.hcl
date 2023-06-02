@@ -10,8 +10,10 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-namespace.git?ref=v1.1.0"
+  source = "tfr:///terraform-google-modules/cloud-storage/google//modules/simple_bucket?version=4.0.0"
 }
+
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Locals are named constants that are reusable within the configuration.
 # ---------------------------------------------------------------------------------------------------------------------
@@ -30,34 +32,37 @@ locals {
   codename = local.environment_vars.locals.codename
 
 }
-
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
+dependency "sa" {
+  config_path = "${get_terragrunt_dir()}/../sa/"
+}
 
-generate "provider_k8s" {
-  path      = "provider_k8s.tf"
-  if_exists = "overwrite_terragrunt"
-  contents  = <<EOF
-provider "kubernetes" {  
-    host                   = "https://${dependency.k8s.outputs.endpoint}"    
-    cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = []
-      command     = "gke-gcloud-auth-plugin"
-  }
-}
-EOF
-}
 # ---------------------------------------------------------------------------------------------------------------------
 # MODULE PARAMETERS
 # These are the variables we have to pass in to use the module. This defines the parameters that are common across all
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name = "argocd"
-  annotations = {
-    "linkerd.io/inject" = "enabled"
-  }
+  name       = join("-", compact([local.name, local.codename, dependency.k8s.outputs.name]))
+  project_id = local.project_id
+  location   = local.region
+
+  versioning = true
+  lifecycle_rules = [
+    {
+      "action" : { "type" : "Delete" },
+      "condition" : {
+        "daysSinceNoncurrentTime" : 2
+      }
+    }
+  ]
+  iam_members = [
+    {
+      role   = "roles/storage.objectAdmin"
+      member = "serviceAccount:${dependency.sa.outputs.gcp_service_account_email}"
+    }
+  ]
+
 }

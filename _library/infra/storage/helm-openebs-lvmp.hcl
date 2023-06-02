@@ -79,7 +79,7 @@ inputs = {
 
   release          = local.codename
   chart            = "lvm-localpv"
-  chart_version    = "1.0.1"
+  chart_version    = "1.1.0"
   namespace        = "kube-system"
   create_namespace = false
   project          = "common"
