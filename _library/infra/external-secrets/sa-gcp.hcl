@@ -24,39 +24,11 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
-
 }
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
-dependencies {
-  paths = [
-    "${get_terragrunt_dir()}/../ns/"
-  ]
-}
-generate "provider_k8s" {
-  path      = "provider_k8s.tf"
-  if_exists = "overwrite_terragrunt"
-  contents  = <<EOF
-provider "kubernetes" {
-  
-    host                   = "https://${dependency.k8s.outputs.endpoint}"    
-    cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = []
-      command     = "gke-gcloud-auth-plugin"
-  }
-}
-EOF
-}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # MODULE PARAMETERS
 # These are the variables we have to pass in to use the module. This defines the parameters that are common across all
@@ -69,4 +41,8 @@ inputs = {
   project_id                      = local.project_id
   roles                           = ["roles/secretmanager.admin"]
   automount_service_account_token = true
+
+  annotate_k8s_sa     = false
+  use_existing_k8s_sa = true
+
 } 

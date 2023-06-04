@@ -26,9 +26,10 @@ locals {
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = "ops"
+  env       = local.environment_vars.locals.environment
+  codename  = local.environment_vars.locals.codename
+  name_vars = read_terragrunt_config(find_in_parent_folders("name.hcl"))
+  name      = local.name_vars.locals.name
 
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
@@ -40,7 +41,7 @@ locals {
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../gcp-us-ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
 }
 dependency "ns" {
   config_path = "${get_terragrunt_dir()}/../ns/"
@@ -77,7 +78,7 @@ inputs = {
 
   repository = "https://logscale-contrib.github.io/helm-logscale-content"
 
-  release          = "${local.codename}-content"
+  release          = "ops"
   chart            = "logscale-content"
   chart_version    = "1.3.1"
   namespace        = dependency.ns.outputs.name
@@ -85,8 +86,7 @@ inputs = {
   project          = "ops"
 
   values = yamldecode(<<EOF
-fullnameOverride: ${local.codename}-logscale
-managedClusterName: ${local.codename}-logscale
+managedClusterName: logscale
 repositoryDefault:
   ingestSizeInGB: "1073741824"
   storageSizeInGB: "1073741824"

@@ -10,8 +10,9 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
+
 
 
 locals {
@@ -22,18 +23,24 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
+  argocd        = read_terragrunt_config(find_in_parent_folders("argocd.hcl"))
+  isArgoCluster = local.argocd.locals.isArgoCluster
+
+
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
+  env       = local.environment_vars.locals.environment
+  codename  = local.environment_vars.locals.codename
+  name_vars = read_terragrunt_config(find_in_parent_folders("name.hcl"))
+  name      = local.name_vars.locals.name
+
 
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+  fqdn = format("%s.%s", join("-", compact(["logscale", local.codename, "ops", "inputs"])), local.domain_name)
 
   #ops-logscale-http-only.logscale-ops.svc.cluster.local
   # insecure_ssl: ${local.inputs.insecure_ssl}
@@ -44,21 +51,33 @@ locals {
   # insecure_ssl = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? true : false
   # protocol     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "http" : "https"
   # hec_port     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "8080" : "443"
-  inputs_url   =   format("%s.%s",join("-", compact(["logscale", local.codename,local.name,"inputs"])),local.domain_name)
-  insecure_ssl = false
-  protocol     = "https"
-  hec_port     = "443" 
-  
+  # isArgoCluster
+  inputs_url   = local.isArgoCluster ? "logscale-ingest-only.logscale-ops.svc.cluster.local" : format("%s.%s", join("-", compact(["logscale", local.codename, "ops", "inputs"])), local.domain_name)
+  insecure_ssl = local.isArgoCluster ? true : false
+  protocol     = local.isArgoCluster ? "http" : "https"
+  hec_port     = local.isArgoCluster ? "8080" : "443"
+
+
+  # inputs_url   =   local.fqdn
+  # insecure_ssl = false
+  # protocol     = "https"
+  # hec_port     = "443" 
+
+
 }
+
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../gke/"
-
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
 }
+dependency "k8sEdge" {
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
+}
+
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project-cluster/",
+    "${get_terragrunt_dir()}/../../../../ops/apps/argocd/projects/common/",
     "${get_terragrunt_dir()}/../secrets/"
   ]
 }
@@ -84,15 +103,17 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+  destination_name = local.argocd.locals.isArgoCluster ? "in-cluster" : dependency.k8sEdge.outputs.name
+
   name = "logging-operator-logging"
 
   repository = "https://kube-logging.github.io/helm-charts"
 
-  release          = "ops"
+  release          = dependency.k8sEdge.outputs.name
   chart            = "logging-operator-logging"
   chart_version    = "4.1.0"
   namespace        = "logging"
-  create_namespace = false
+  create_namespace = true
   project          = "common"
 
   values = yamldecode(<<EOF
@@ -146,7 +167,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cluster_name: "{{name}}"
+            - cluster_name: "${dependency.k8sEdge.outputs.name}"
       match:
       - select:
           labels:
@@ -160,7 +181,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cluster_name: "{{name}}"
+            - cluster_name: "${dependency.k8sEdge.outputs.name}"
       match:
       - select:
           labels:
@@ -174,7 +195,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cluster_name: "{{name}}"
+            - cluster_name: "${dependency.k8sEdge.outputs.name}"
       match:
       - exclude:
           labels:
@@ -220,7 +241,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cluster_name: "{{name}}"
+            - cluster_name: "${dependency.k8sEdge.outputs.name}"
       match:
       - exclude:
           namespaces:
@@ -269,7 +290,7 @@ clusterOutputs:
         hec_token:
           valueFrom:
             secretKeyRef:
-              name: ops-logscale-infra-kubernetes-cluster-local-event
+              name: ops-logscale-content-infra-kubernetes-cluster-local-event
               key: token
         format:
           type: json
@@ -285,7 +306,7 @@ clusterOutputs:
         hec_token:
           valueFrom:
             secretKeyRef:
-              name: ops-logscale-infra-kubernetes-cluster-local-host
+              name: ops-logscale-content-infra-kubernetes-cluster-local-host
               key: token
         format:
           type: json
@@ -301,7 +322,7 @@ clusterOutputs:
         hec_token:
           valueFrom:
             secretKeyRef:
-              name: ops-logscale-infra-kubernetes-cluster-local-pod
+              name: ops-logscale-content-infra-kubernetes-cluster-local-pod
               key: token
         format:
           type: json          
@@ -317,7 +338,7 @@ clusterOutputs:
         hec_token:
           valueFrom:
             secretKeyRef:
-              name: ops-logscale-apps-kubernetes-cluster-local-pod
+              name: ops-logscale-content-apps-kubernetes-cluster-local-pod
               key: token
         format:
           type: json          

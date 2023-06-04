@@ -23,19 +23,6 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
-
-  dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
-  domain_name = local.dns.locals.domain_name
-
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
-
 }
 
 
@@ -46,9 +33,10 @@ dependency "k8s" {
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project-cluster/"
+    "${get_terragrunt_dir()}/../../argocd/projects/common/"
   ]
 }
+
 
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
@@ -75,6 +63,8 @@ inputs = {
   name = "lvm-storageclass"
 
   repository = "https://logscale-contrib.github.io/helm-k8s-storageclass"
+
+  # destination_name = "*"
 
   release          = "ops"
   chart            = "storageclass"

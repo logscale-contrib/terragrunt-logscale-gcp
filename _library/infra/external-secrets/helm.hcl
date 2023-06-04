@@ -10,8 +10,9 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
+
 
 
 locals {
@@ -22,32 +23,27 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
-
-  dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
-  domain_name = local.dns.locals.domain_name
-
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+  argocd        = read_terragrunt_config(find_in_parent_folders("argocd.hcl"))
+  isArgoCluster = local.argocd.locals.isArgoCluster
 
 }
-
 
 dependency "k8s" {
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
+}
+dependency "k8sEdge" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
-
+dependency "sa" {
+  config_path = "${get_terragrunt_dir()}/../sa/"
+}
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project-cluster/",
-    "${get_terragrunt_dir()}/../sa/"
+    "${get_terragrunt_dir()}/../../../../ops/apps/argocd/projects/common/"
   ]
 }
+
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
@@ -70,20 +66,20 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name = "external-secrets"
-
+  destination_name = local.argocd.locals.isArgoCluster ? "in-cluster" : dependency.k8sEdge.outputs.name
 
   repository = "https://charts.external-secrets.io"
 
-  release          = "ops"
+  release          = dependency.k8sEdge.outputs.name
   chart            = "external-secrets"
-  chart_version    = "0.8.1"
+  chart_version    = "0.8.3"
   namespace        = "external-secrets"
-  create_namespace = false
+  create_namespace = true
   project          = "common"
 
 
   values = yamldecode(<<EOF
+fullnameOverride: "external-secrets"
 replicaCount: 2
 leaderElect: true
 topologySpreadConstraints:
@@ -116,9 +112,12 @@ affinity:
 replicaCount: 1
 leaderElect: true
 serviceAccount:
-  create: false
+  create: true
   automount: true
   name: external-secrets
+  annotations:
+    "iam.gke.io/gcp-service-account": ${dependency.sa.outputs.gcp_service_account_email}
+  
 certController:
   resources:
     requests: 

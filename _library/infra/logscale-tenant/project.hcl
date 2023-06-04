@@ -35,7 +35,7 @@ locals {
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../gcp-us-ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
 }
 
 dependencies {

@@ -32,7 +32,7 @@ locals {
   codename = local.environment_vars.locals.codename
 
   cluster_vars = read_terragrunt_config(find_in_parent_folders("cluster.hcl"))
-  cluster_id     = local.cluster_vars.locals.one
+  cluster_id   = local.cluster_vars.locals.one
 
 }
 dependency "k8s" {
@@ -76,7 +76,7 @@ inputs = {
     {
       role   = "roles/storage.objectAdmin"
       member = "serviceAccount:${dependency.sa2.outputs.gcp_service_account_email}"
-    }    
+    }
   ]
 
 }

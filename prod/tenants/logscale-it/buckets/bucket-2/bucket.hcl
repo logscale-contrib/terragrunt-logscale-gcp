@@ -1,3 +1,3 @@
 locals {
-  suffix           = "2"
+  suffix = "2"
 }

@@ -29,15 +29,17 @@ locals {
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
+  codename  = local.environment_vars.locals.codename
+  env       = local.environment_vars.locals.environment
+  geo       = local.environment_vars.locals.geo
+  name_vars = read_terragrunt_config(find_in_parent_folders("name.hcl"))
+  name      = local.name_vars.locals.name
 
 }
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../project/"
+    "${get_terragrunt_dir()}/../../../project/"
   ]
 }
 # ---------------------------------------------------------------------------------------------------------------------
@@ -46,15 +48,14 @@ dependencies {
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  network_name = join("-", compact([local.codename, local.env, local.name]))
-  # "${local.name}-${local.env}-${local.codename}"
+  network_name = join("-", compact([local.codename, local.env, local.geo, local.name]))
   routing_mode = "GLOBAL"
   project_id   = local.project_id
 
   mtu = 8896
   subnets = [
     {
-      subnet_name   = "k8s"
+      subnet_name   = "${join("-", compact([local.codename, local.env, local.geo, local.name]))}-k8s"
       subnet_ip     = "10.0.0.0/17"
       subnet_region = local.region
     },
@@ -73,13 +74,13 @@ inputs = {
 
   ]
   secondary_ranges = {
-    "k8s" = [
+    "${join("-", compact([local.codename, local.env, local.geo, local.name]))}-k8s" = [
       {
-        range_name    = "pods"
+        range_name    = "${join("-", compact([local.codename, local.env, local.geo, local.name]))}-pods"
         ip_cidr_range = "192.168.0.0/18"
       },
       {
-        range_name    = "svc"
+        range_name    = "${join("-", compact([local.codename, local.env, local.geo, local.name]))}-svc"
         ip_cidr_range = "192.168.64.0/18"
       },
     ]

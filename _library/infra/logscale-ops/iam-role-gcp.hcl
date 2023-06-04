@@ -28,9 +28,10 @@ locals {
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
+  env       = local.environment_vars.locals.environment
+  codename  = local.environment_vars.locals.codename
+  name_vars = read_terragrunt_config(find_in_parent_folders("name.hcl"))
+  name      = local.name_vars.locals.name
 
 }
 dependency "k8s" {

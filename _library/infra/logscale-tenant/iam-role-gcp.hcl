@@ -57,6 +57,6 @@ inputs = {
   members = [
     "serviceAccount:${dependency.sa1.outputs.gcp_service_account_email}",
     "serviceAccount:${dependency.sa2.outputs.gcp_service_account_email}"
-    ]
+  ]
 
 } 

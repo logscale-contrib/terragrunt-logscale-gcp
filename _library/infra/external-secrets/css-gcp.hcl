@@ -10,8 +10,9 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
+
 
 
 locals {
@@ -22,31 +23,25 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
+  argocd        = read_terragrunt_config(find_in_parent_folders("argocd.hcl"))
+  isArgoCluster = local.argocd.locals.isArgoCluster
 
-  dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
-  domain_name = local.dns.locals.domain_name
-
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
 }
 
 
 dependency "k8s" {
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
+}
+dependency "k8sEdge" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
-
-
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project-cluster/"
+    "${get_terragrunt_dir()}/../../../../ops/apps/argocd/projects/common/"
   ]
 }
+
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
@@ -68,20 +63,21 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name = "clustersecretstore"
+  destination_name = local.argocd.locals.isArgoCluster ? "in-cluster" : dependency.k8sEdge.outputs.name
 
   repository = "https://logscale-contrib.github.io/helm-external-secrets-cluster-secret-store"
 
-  release          = "ops"
+  release          = dependency.k8sEdge.outputs.name
   chart            = "clustersecretstore"
   chart_version    = "1.0.1"
   namespace        = "kube-system"
-  create_namespace = true
+  create_namespace = false
   project          = "common"
   skipCrds         = false
 
 
   values = yamldecode(<<EOF
+nameOverride: "ops"
 provider:
   gcpsm:
     projectID: ${local.gcp_vars.locals.project_id}

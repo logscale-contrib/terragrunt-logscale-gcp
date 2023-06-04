@@ -13,38 +13,13 @@ terraform {
   source = "git::https://github.com/logscale-contrib/terraform-argocd-applicationset.git?ref=v1.1.1"
 }
 
-
-locals {
-  # Expose the base source URL so different versions of the module can be deployed in different environments. This will
-  # be used to construct the terraform block in the child terragrunt configurations.
-
-  gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
-  project_id = local.gcp_vars.locals.project_id
-  region     = local.gcp_vars.locals.region
-
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
-
-  dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
-  domain_name = local.dns.locals.domain_name
-
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
-}
-
-
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
-
 }
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project-cluster/"
+    "${get_terragrunt_dir()}/../../argocd/projects/common/"
   ]
 }
 generate "provider_k8s" {
@@ -68,6 +43,7 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+
   name = "cert-manager"
 
   repository = "https://charts.jetstack.io"
@@ -82,6 +58,8 @@ inputs = {
 
 
   values = yamldecode(<<EOF
+fullnameOverride: cert-manager
+
 topologySpreadConstraints:
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone

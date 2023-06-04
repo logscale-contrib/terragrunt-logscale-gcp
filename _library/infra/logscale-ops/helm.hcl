@@ -24,10 +24,10 @@ locals {
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = "ops"
-
+  env       = local.environment_vars.locals.environment
+  codename  = local.environment_vars.locals.codename
+  name_vars = read_terragrunt_config(find_in_parent_folders("name.hcl"))
+  name      = local.name_vars.locals.name
 
 
   host_name   = "logscale-ops"
@@ -43,19 +43,25 @@ locals {
 
   destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
 
-  fqdn_ui = format("%s.%s",join("-", compact(["logscale",local.name])),local.domain_name)
-  fqdn_inputs = format("%s.%s",join("-", compact(["logscale", local.name,"inputs"])),local.domain_name)
+  fqdn_ui     = format("%s.%s", join("-", compact(["logscale", local.name])), local.domain_name)
+  fqdn_inputs = format("%s.%s", join("-", compact(["logscale", local.name, "inputs"])), local.domain_name)
 
 
 }
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../gcp-us-ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
 }
 dependency "bucket" {
   config_path = "${get_terragrunt_dir()}/../bucket/"
 }
 dependency "sso" {
   config_path = "${get_terragrunt_dir()}/../sso/"
+}
+dependency "ns" {
+  config_path = "${get_terragrunt_dir()}/../ns/"
+}
+dependency "sa" {
+  config_path = "${get_terragrunt_dir()}/../sa/"
 }
 
 dependencies {
@@ -101,6 +107,7 @@ inputs = {
   server_side_apply = false
 
   values = yamldecode(<<EOF
+fullnameOverride: logscale
 platform: gcp
 humio:
   # External URI
@@ -141,13 +148,13 @@ humio:
   kafka:
     manager: strimzi
     prefixEnable: true
-    strimziCluster: "${local.codename}-logscale"
+    strimziCluster: "logscale"
     topicPrefix: ops
     topics:
       ingest:
         retention:
           bytes: 110000000000
-    # externalKafkaHostname: "${local.codename}-logscale-kafka-bootstrap:9092"
+    # externalKafkaHostname: "logscale-kafka-bootstrap:9092"
 
   #Image is shared by all node pools
   image:
@@ -169,8 +176,11 @@ humio:
   targetReplicationFactor: 1
 
   serviceAccount:
-    create: false
+    create: true
     name: "logscale"
+    annotations:
+      "iam.gke.io/gcp-service-account": ${dependency.sa.outputs.gcp_service_account_email}
+
       
   tolerations:
     - key: "computeClass"
@@ -199,14 +209,23 @@ humio:
               - key: "computeClass"
                 operator: "In"
                 values: ["compute"]      
-    # podAntiAffinity:
-    #   requiredDuringSchedulingIgnoredDuringExecution:
-    #     - labelSelector:
-    #         matchExpressions:
-    #           - key: app.kubernetes.io/instance
-    #             operator: In
-    #             values: ["${local.codename}-logscale"]
-    #       topologyKey: "kubernetes.io/hostname"
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - "kafka"
+          topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - "zookeeper"
+          topologyKey: kubernetes.io/hostname
+
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: topology.kubernetes.io/zone
@@ -216,7 +235,7 @@ humio:
           - key: humio.com/node-pool
             operator: In
             values:
-              - "${local.codename}-logscale"
+              - "logscale"
   dataVolumePersistentVolumeClaimSpecTemplate:
     accessModes: ["ReadWriteOnce"]
     resources:
@@ -300,10 +319,10 @@ humio:
         #         matchExpressions:
         #           - key: app.kubernetes.io/instance
         #             operator: In
-        #             values: ["${local.codename}-logscale"]
+        #             values: ["logscale"]
         #           - key: humio.com/node-pool
         #             operator: In
-        #             values: ["${local.codename}-logscale-ingest-only"]
+        #             values: ["logscale-ingest-only"]
         #       topologyKey: "kubernetes.io/hostname"
       topologySpreadConstraints:
             - maxSkew: 1
@@ -314,7 +333,7 @@ humio:
                   - key: humio.com/node-pool
                     operator: In
                     values:
-                      - "${local.codename}-logscale-ingest-only"       
+                      - "logscale-ingest-only"       
     ui:
       nodeCount: 3
       resources:
@@ -363,10 +382,10 @@ humio:
         #         matchExpressions:
         #           - key: app.kubernetes.io/instance
         #             operator: In
-        #             values: ["${local.codename}-logscale"]
+        #             values: ["logscale"]
         #           - key: humio.com/node-pool
         #             operator: In
-        #             values: ["${local.codename}-logscale-http-only"]
+        #             values: ["logscale-http-only"]
         #       topologyKey: "kubernetes.io/hostname"
       topologySpreadConstraints:
             - maxSkew: 1
@@ -377,7 +396,7 @@ humio:
                   - key: humio.com/node-pool
                     operator: In
                     values:
-                      - "${local.codename}-logscale-http-only"                     
+                      - "logscale-http-only"                     
 kafka:
   allowAutoCreate: false
   affinity:
@@ -395,15 +414,26 @@ kafka:
                 operator: "In"
                 values: ["compute"]                 
                     
-    # podAntiAffinity:
-    #   requiredDuringSchedulingIgnoredDuringExecution:
-    #     - labelSelector:
-    #         matchExpressions:
-    #           - key: strimzi.io/component-type
-    #             operator: In
-    #             values:
-    #               - "zookeeper"
-    #       topologyKey: kubernetes.io/hostname
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - "zookeeper"
+          topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - "humio"
+              - key: humio.com/node-pool
+                operator: In
+                values:
+                  - "logscale"
+
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: topology.kubernetes.io/zone
@@ -413,7 +443,7 @@ kafka:
           - key: strimzi.io/name
             operator: In
             values:
-              - "${local.codename}-logscale-kafka"
+              - "logscale-kafka"
   tolerations:
     - key: "computeClass"
       operator: "Equal"
@@ -462,15 +492,26 @@ zookeeper:
               - key: "computeClass"
                 operator: "In"
                 values: ["compute"]                 
-    # podAntiAffinity:
-    #   requiredDuringSchedulingIgnoredDuringExecution:
-    #     - labelSelector:
-    #         matchExpressions:
-    #           - key: strimzi.io/component-type
-    #             operator: In
-    #             values:
-    #               - "kafka"
-    #       topologyKey: kubernetes.io/hostname
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - "kafka"
+          topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - "humio"
+              - key: humio.com/node-pool
+                operator: In
+                values:
+                  - "logscale"
+          topologyKey: kubernetes.io/hostname
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: topology.kubernetes.io/zone
@@ -480,7 +521,7 @@ zookeeper:
           - key: strimzi.io/name
             operator: In
             values:
-              - "${local.codename}-logscale-zookeeper"
+              - "logscale-zookeeper"
   tolerations:
     - key: "computeClass"
       operator: "Equal"

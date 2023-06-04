@@ -23,14 +23,6 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
-
 }
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
@@ -45,7 +37,7 @@ dependency "sa" {
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name       = join("-", compact([local.name, local.codename, dependency.k8s.outputs.name]))
+  name       = dependency.k8s.outputs.name
   project_id = local.project_id
   location   = local.region
 

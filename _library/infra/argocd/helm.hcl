@@ -17,21 +17,6 @@ terraform {
 # Locals are named constants that are reusable within the configuration.
 # ---------------------------------------------------------------------------------------------------------------------
 locals {
-  uniqueName = "${local.name}-${local.codename}"
-
-  gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
-  project_id = local.gcp_vars.locals.project_id
-  region     = local.gcp_vars.locals.region
-
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
-
-
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
@@ -48,7 +33,7 @@ dependency "sso" {
 }
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../ns/"
+    "${get_terragrunt_dir()}/../ns/",
   ]
 }
 generate "provider_gke" {
@@ -83,12 +68,13 @@ inputs = {
     create_namespace = true
 
     chart   = "argo-cd"
-    version = "5.34.1"
+    version = "5.34.6"
 
     wait   = true
     deploy = 1
   }
   values = [<<EOF
+fullnameOverride: argocd
 createAggregateRoles: true
 
 argo-cd:
@@ -179,7 +165,7 @@ server:
       - ${local.host_name}.${local.domain_name}
     annotations:
       external-dns.alpha.kubernetes.io/hostname: ${local.host_name}.${local.domain_name}
-      networking.gke.io/managed-certificates: cert-google-gke-managed-cert
+      networking.gke.io/managed-certificates: ops-argocd-cert-google-gke-managed-cert
   resources:
     requests:
       cpu: 100m

@@ -28,9 +28,10 @@ locals {
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
+  env       = local.environment_vars.locals.environment
+  codename  = local.environment_vars.locals.codename
+  name_vars = read_terragrunt_config(find_in_parent_folders("name.hcl"))
+  name      = local.name_vars.locals.name
 
 }
 dependency "vpc" {
@@ -51,9 +52,9 @@ inputs = {
   regional               = true
   region                 = local.gcp_vars.locals.region
   network                = dependency.vpc.outputs.network_name
-  subnetwork             = "k8s"
-  ip_range_pods          = "pods"
-  ip_range_services      = "svc"
+  subnetwork             = "${dependency.vpc.outputs.network_name}-k8s"
+  ip_range_pods          = "${dependency.vpc.outputs.network_name}-pods"
+  ip_range_services      = "${dependency.vpc.outputs.network_name}-svc"
   create_service_account = true
   # service_account             = module.service_accounts.email
   enable_cost_allocation      = true

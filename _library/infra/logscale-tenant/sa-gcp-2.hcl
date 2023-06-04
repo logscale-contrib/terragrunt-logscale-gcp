@@ -33,7 +33,7 @@ locals {
   codename = local.environment_vars.locals.codename
 
   cluster_vars = read_terragrunt_config(find_in_parent_folders("cluster.hcl"))
-  cluster_id     = local.cluster_vars.locals.two
+  cluster_id   = local.cluster_vars.locals.two
 
 }
 dependency "k8s" {
@@ -68,6 +68,6 @@ inputs = {
   project_id                      = local.project_id
   automount_service_account_token = true
 
-  annotate_k8s_sa = false
+  annotate_k8s_sa     = false
   use_existing_k8s_sa = true
 } 
