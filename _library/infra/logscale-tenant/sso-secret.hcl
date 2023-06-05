@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v2.0.2"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -28,9 +28,11 @@ locals {
   infra_codename = local.infra_vars.locals.codename
   infra_geo      = local.infra_vars.locals.geo
 
+  infra_name       = local.infra_vars.locals.active == "1" ? "1" : "2"
+  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.infra_name]))
+
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
   # Extract out common variables for reuse
   env      = local.environment_vars.locals.environment
   name     = local.environment_vars.locals.name
@@ -40,14 +42,16 @@ locals {
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
-  host_name = "argocd"
-
 }
-
 
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../infra/${local.infra_geo}/ops/gke/"
 }
+dependency "sso" {
+  config_path = "${get_terragrunt_dir()}/../sso/"
+}
+
+
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
@@ -70,33 +74,24 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+  destination_name = local.destination_name
 
-  name = "${join("-", compact(["logscale", local.name, local.codename]))}.${local.domain_name}"
-  identifier_uris = [
-    "https://${join("-", compact(["logscale", local.name, local.codename]))}.${local.domain_name}"
-  ]
+  repository = "https://logscale-contrib.github.io/helm-k8s-secret/"
 
-  web = [{
-    homepage_url = "https://${join("-", compact(["logscale", local.name, local.codename]))}.${local.domain_name}"
-    logout_url   = "https://${join("-", compact(["logscale", local.name, local.codename]))}.${local.domain_name}/logout"
-    redirect_uris = [
-      "https://${join("-", compact(["logscale", local.name, local.codename]))}.${local.domain_name}/auth/oidc"
-    ]
-  }]
+  release          = join("-", compact(["logscale", local.name, local.codename, "sso-secret"]))
+  chart            = "helm-k8s-secret"
+  chart_version    = "1.0.1"
+  namespace        = join("-", compact(["logscale", local.name, local.codename]))
+  create_namespace = true
+  project          = "common"
 
-  # secret_name      = "azuread-oidc"
-  # secret_namespace = join("-", compact(["logscale",local.name, local.codename]))
-  # secret_key       = "oidc.azure.clientSecret"
-
-
-  assigned_groups = [
-    {
-      #display_name = "consultant",
-      group_id = "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415"
-    },
-    {
-      #display_name = "tech-lead",
-      group_id = "9e9e711b-9028-472f-a966-7ed7e0b704ae"
-    }
-  ]
+  values = yamldecode(<<EOF
+fullnameOverride: sso-secret
+secrets:
+    - name: azuread-oidc
+      data:
+        oidc.azure.clientSecret: ${base64encode(dependency.sso.outputs.client_secret)} 
+domains: ["${join("-", compact(["logscale", local.name, local.codename]))}.${local.domain_name}"]
+EOF
+  )
 }

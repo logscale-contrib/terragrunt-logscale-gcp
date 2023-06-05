@@ -82,8 +82,8 @@ provisioner:
   image:
     registry: registry.k8s.io/
     tag: v3.5.0  
-lvmPlugin:
-  allowedTopologies: storageClass=nvme
+# lvmPlugin:
+#   allowedTopologies: storageClass=nvme
 lvmNode:
   nodeSelector:
     storageClass: "nvme"

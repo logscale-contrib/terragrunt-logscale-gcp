@@ -25,6 +25,13 @@ locals {
   region     = local.gcp_vars.locals.region
 
   # Automatically load environment-level variables
+  infra_vars     = read_terragrunt_config(find_in_parent_folders("infra.hcl"))
+  infra_env      = local.infra_vars.locals.environment
+  infra_codename = local.infra_vars.locals.codename
+  infra_geo      = local.infra_vars.locals.geo
+
+
+  # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Extract out common variables for reuse
@@ -37,7 +44,7 @@ locals {
 
 }
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../infra/${local.cluster_id}/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../infra/${local.infra_geo}/${local.cluster_id}/gke/"
 }
 
 generate "provider_gcp" {
@@ -64,7 +71,7 @@ inputs = {
   gcp_sa_name = join("-", compact([local.name, local.codename, dependency.k8s.outputs.name]))
 
   name                            = "logscale"
-  namespace                       = join("-", compact(["logscale", local.name]))
+  namespace                       = join("-", compact(["logscale", local.name, local.codename]))
   project_id                      = local.project_id
   automount_service_account_token = true
 

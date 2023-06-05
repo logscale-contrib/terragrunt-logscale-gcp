@@ -81,11 +81,6 @@ parameters:
   storage: "lvm"
   volgroup: "instancestore"
 provisioner: local.csi.openebs.io
-allowedTopologies:
-- matchLabelExpressions:
-  - key: storageClass
-    values:
-      - nvme
 EOF
   )
 

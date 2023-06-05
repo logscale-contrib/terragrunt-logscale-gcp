@@ -24,6 +24,12 @@ locals {
   region     = local.gcp_vars.locals.region
 
   # Automatically load environment-level variables
+  infra_vars     = read_terragrunt_config(find_in_parent_folders("infra.hcl"))
+  infra_env      = local.infra_vars.locals.environment
+  infra_codename = local.infra_vars.locals.codename
+  infra_geo      = local.infra_vars.locals.geo
+
+  # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Extract out common variables for reuse
@@ -32,11 +38,10 @@ locals {
   codename = local.environment_vars.locals.codename
 
   cluster_vars = read_terragrunt_config(find_in_parent_folders("cluster.hcl"))
-  cluster_id   = local.cluster_vars.locals.two
+  cluster_id   = local.cluster_vars.locals.one
+  bucket_vars  = read_terragrunt_config("bucket.hcl")
+  suffix       = local.bucket_vars.locals.suffix
 
-}
-dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../infra/${local.cluster_id}/gke/"
 }
 dependency "sa1" {
   config_path = "${get_terragrunt_dir()}/../../sa/sa-1/"
@@ -51,9 +56,9 @@ dependency "sa2" {
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name       = join("-", compact([local.name, local.codename, dependency.k8s.outputs.name]))
+  name       = join("-", compact(["logscale", local.name, local.codename, local.suffix]))
   project_id = local.project_id
-  location   = "us"
+  location   = local.infra_geo
 
   custom_placement_config = {
     data_locations : ["US-EAST1", "US-WEST2"]

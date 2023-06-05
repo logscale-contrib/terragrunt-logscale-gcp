@@ -23,8 +23,16 @@ locals {
   region     = local.gcp_vars.locals.region
 
   # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  infra_vars     = read_terragrunt_config(find_in_parent_folders("infra.hcl"))
+  infra_env      = local.infra_vars.locals.environment
+  infra_codename = local.infra_vars.locals.codename
+  infra_geo      = local.infra_vars.locals.geo
 
+  infra_name       = local.infra_vars.locals.active == "1" ? "1" : "2"
+  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.infra_name]))
+
+  # Automatically load environment-level variables
+  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
   # Extract out common variables for reuse
   env      = local.environment_vars.locals.environment
   name     = local.environment_vars.locals.name
@@ -37,8 +45,10 @@ locals {
 }
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../gke/"
+  config_path = "${get_terragrunt_dir()}/../../../infra/${local.infra_geo}/ops/gke/"
 }
+
+
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
@@ -54,25 +64,27 @@ provider "kubernetes" {
   }
 }
 EOF
-} # ---------------------------------------------------------------------------------------------------------------------
+}
+# ---------------------------------------------------------------------------------------------------------------------
 # MODULE PARAMETERS
 # These are the variables we have to pass in to use the module. This defines the parameters that are common across all
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  destination_name = "in-cluster"
+  destination_name = local.destination_name
 
   repository = "https://logscale-contrib.github.io/helm-google-gke-managed-cert/"
 
-  release          = "cert-inputs"
+  release          = join("-", compact(["logscale", local.name, local.codename, "cert-inputs"]))
   chart            = "google-gke-managed-cert"
   chart_version    = "1.0.3"
-  namespace        = "${local.name}-${local.codename}"
+  namespace        = join("-", compact(["logscale", local.name, local.codename]))
   create_namespace = true
-  project          = "ops"
+  project          = "common"
 
   values = yamldecode(<<EOF
-domains: ["logscale-${local.codename}-inputs.${local.domain_name}"]
+fullnameOverride: cert-inputs
+domains: ["${join("-", compact(["logscale", local.name, local.codename, "inputs"]))}.${local.domain_name}"]
 EOF
   )
 }

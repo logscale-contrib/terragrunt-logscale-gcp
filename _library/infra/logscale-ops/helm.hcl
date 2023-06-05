@@ -209,6 +209,19 @@ humio:
               - key: "computeClass"
                 operator: "In"
                 values: ["compute"]      
+          - matchExpressions:
+              - key: "kubernetes.io/arch"
+                operator: "In"
+                values: ["amd64"]
+              - key: "kubernetes.io/os"
+                operator: "In"
+                values: ["linux"]  
+              - key: "computeClass"
+                operator: "In"
+                values: ["compute"]                      
+              - key: "storageClass"
+                operator: "In"
+                values: ["nvme"]                      
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
@@ -225,7 +238,13 @@ humio:
                 values:
                   - "zookeeper"
           topologyKey: kubernetes.io/hostname
-
+        - labelSelector:
+            matchExpressions:
+              - key: humio.com/node-pool
+                operator: In
+                values:
+                  - "logscale"          
+          topologyKey: kubernetes.io/hostname
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: topology.kubernetes.io/zone
@@ -285,10 +304,10 @@ humio:
           operator: "Equal"
           value: "compute"
           effect: "NoSchedule"      
-        # - key: "storageClass"
-        #   operator: "Equal"
-        #   value: "nvme"
-        #   effect: "NoSchedule"
+        - key: "storageClass"
+          operator: "Equal"
+          value: "nvme"
+          effect: "NoSchedule"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -302,38 +321,32 @@ humio:
                     values: ["linux"]  
                   - key: "computeClass"
                     operator: "In"
-                    values: ["compute"]               
+                    values: ["compute"]                            
+                  - key: "storageClass"
+                    operator: "DoesNotExist"
               - matchExpressions:
                   - key: "kubernetes.io/arch"
                     operator: "In"
                     values: ["amd64"]
                   - key: "kubernetes.io/os"
                     operator: "In"
-                    values: ["linux"]
-                  # - key: "kubernetes.azure.com/agentpool"
-                  #   operator: "In"
-                  #   values: ["compute"]
+                    values: ["linux"]  
+                  - key: "computeClass"
+                    operator: "In"
+                    values: ["compute"]                       
+                  - key: "storageClass"
+                    operator: "Exists"                        
         # podAntiAffinity:
-        #   requiredDuringSchedulingIgnoredDuringExecution:
-        #     - labelSelector:
-        #         matchExpressions:
-        #           - key: app.kubernetes.io/instance
-        #             operator: In
-        #             values: ["logscale"]
-        #           - key: humio.com/node-pool
-        #             operator: In
-        #             values: ["logscale-ingest-only"]
-        #       topologyKey: "kubernetes.io/hostname"
       topologySpreadConstraints:
-            - maxSkew: 1
-              topologyKey: topology.kubernetes.io/zone
-              whenUnsatisfiable: DoNotSchedule
-              labelSelector:
-                matchExpressions:
-                  - key: humio.com/node-pool
-                    operator: In
-                    values:
-                      - "logscale-ingest-only"       
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchExpressions:
+              - key: humio.com/node-pool
+                operator: In
+                values:
+                  - "logscale-ingest-only"       
     ui:
       nodeCount: 3
       resources:
@@ -348,10 +361,10 @@ humio:
           operator: "Equal"
           value: "compute"
           effect: "NoSchedule"      
-        # - key: "storageClass"
-        #   operator: "Equal"
-        #   value: "nvme"
-        #   effect: "NoSchedule"
+        - key: "storageClass"
+          operator: "Equal"
+          value: "nvme"
+          effect: "NoSchedule"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -365,17 +378,21 @@ humio:
                     values: ["linux"]  
                   - key: "computeClass"
                     operator: "In"
-                    values: ["compute"]               
+                    values: ["compute"]                            
+                  - key: "storageClass"
+                    operator: "DoesNotExist"
               - matchExpressions:
                   - key: "kubernetes.io/arch"
                     operator: "In"
                     values: ["amd64"]
                   - key: "kubernetes.io/os"
                     operator: "In"
-                    values: ["linux"]
-                  # - key: "kubernetes.azure.com/agentpool"
-                  #   operator: "In"
-                  #   values: ["compute"]
+                    values: ["linux"]  
+                  - key: "computeClass"
+                    operator: "In"
+                    values: ["compute"]                       
+                  - key: "storageClass"
+                    operator: "Exists"
         # podAntiAffinity:
         #   requiredDuringSchedulingIgnoredDuringExecution:
         #     - labelSelector:
@@ -413,7 +430,13 @@ kafka:
               - key: "computeClass"
                 operator: "In"
                 values: ["compute"]                 
-                    
+          - matchExpressions:
+              - key: "kubernetes.io/arch"
+                operator: "In"
+                values: ["amd64"]
+              - key: "kubernetes.io/os"
+                operator: "In"
+                values: ["linux"]                    
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
@@ -433,17 +456,17 @@ kafka:
                 operator: In
                 values:
                   - "logscale"
-
+          topologyKey: kubernetes.io/hostname
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: topology.kubernetes.io/zone
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchExpressions:
-          - key: strimzi.io/name
+          - key: app.kubernetes.io/name
             operator: In
             values:
-              - "logscale-kafka"
+              - "kafka"
   tolerations:
     - key: "computeClass"
       operator: "Equal"
@@ -518,10 +541,10 @@ zookeeper:
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchExpressions:
-          - key: strimzi.io/name
+          - key: app.kubernetes.io/name
             operator: In
             values:
-              - "logscale-zookeeper"
+              - "zookeeper"
   tolerations:
     - key: "computeClass"
       operator: "Equal"
