@@ -87,15 +87,15 @@ redis-ha:
   redis:
     resources:
       requests:
-        cpu: ".5"
-        memory: 96Mi
+        cpu: "1100m"
+        memory: 48Mi
       # limits:
       #   cpu: "2"
       #   memory: 256Mi
   haproxy:
     resources:
       requests:
-        cpu: 50m
+        cpu: "10m"
         memory: 96Mi
       # limits:
       #   cpu: 500m
@@ -111,7 +111,7 @@ controller:
   resources:
     requests:
       cpu: 200m
-      memory: 512Mi
+      memory: 300Mi
     # limits:
     #   cpu: 2
     #   memory: 1Gi

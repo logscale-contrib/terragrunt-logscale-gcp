@@ -123,8 +123,8 @@ certmanager:
   enabled: true
 resources:
   requests: 
-    cpu: 50m
-    memory: 64Mi
+    cpu: 10m
+    memory: 30Mi
   # limits:
   #   cpu: 1
   #   memory: 1Gi  

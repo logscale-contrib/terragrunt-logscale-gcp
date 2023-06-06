@@ -94,9 +94,8 @@ inputs = {
   skipCrds         = false
 
   values = yamldecode(<<EOF
-templates:
-  - |
-    apiVersion: external-secrets.io/v1beta1
+resources:
+  - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
     metadata:
       name: ops-logscale-content-apps-kubernetes-cluster-local-pod
@@ -115,8 +114,7 @@ templates:
           conversionStrategy: Default	
           decodingStrategy: None
           key: ops-logscale-content-apps-kubernetes-cluster-local-pod
-  - |
-    apiVersion: external-secrets.io/v1beta1
+  - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
     metadata:
       name: ops-logscale-content-infra-kubernetes-cluster-local-event
@@ -135,8 +133,7 @@ templates:
           conversionStrategy: Default	
           decodingStrategy: None
           key: ops-logscale-content-infra-kubernetes-cluster-local-event
-  - |
-    apiVersion: external-secrets.io/v1beta1
+  - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
     metadata:
       name: ops-logscale-content-infra-kubernetes-cluster-local-host
@@ -155,8 +152,7 @@ templates:
           conversionStrategy: Default	
           decodingStrategy: None
           key: ops-logscale-content-infra-kubernetes-cluster-local-host      
-  - |
-    apiVersion: external-secrets.io/v1beta1
+  - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret
     metadata:
       name: ops-logscale-content-infra-kubernetes-cluster-local-pod

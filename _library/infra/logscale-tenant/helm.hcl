@@ -94,9 +94,9 @@ inputs = {
 
   release          = join("-", compact(["logscale", local.name, local.codename]))
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.58"
+  chart_version    = "v7.0.0-next.62"
   namespace        = join("-", compact(["logscale", local.name, local.codename]))
-  create_namespace = false
+  create_namespace = true
   project          = "common"
 
   server_side_apply = false
@@ -156,10 +156,11 @@ humio:
   # Primary Node pool used for digest/storage
   nodeCount: 3
   #In general for these node requests and limits should match
+  priorityClassName: logscale-core
   resources:
     requests:
-      memory: 24Gi
-      cpu: 6
+      memory: 16Gi
+      cpu: 4
     # limits:
     #   memory: 8Gi
     #   cpu: 2
@@ -171,9 +172,7 @@ humio:
   serviceAccount:
     name: "logscale"
     annotations:
-      "iam.gke.io/gcp-service-account": ${dependency.sa.outputs.gcp_service_account_email}
-      
-      
+      "iam.gke.io/gcp-service-account": ${dependency.sa.outputs.gcp_service_account_email}      
   tolerations:
     - key: "computeClass"
       operator: "Equal"
@@ -182,7 +181,7 @@ humio:
     - key: "storageClass"
       operator: "Equal"
       value: "nvme"
-      effect: "NoSchedule"    
+      effect: "NoSchedule"      
     - key: "node.kubernetes.io/disk-pressure"
       operator: "Exists"
       tolerationSeconds: 300
@@ -220,13 +219,7 @@ humio:
                 values:
                   - "zookeeper"
           topologyKey: kubernetes.io/hostname
-        - labelSelector:
-            matchExpressions:
-              - key: humio.com/node-pool
-                operator: In
-                values:
-                  - "logscale"          
-          topologyKey: kubernetes.io/hostname
+
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: topology.kubernetes.io/zone
@@ -273,23 +266,20 @@ humio:
           networking.gke.io/managed-certificates: cert-inputs
   nodepools:
     ingest:
-      nodeCount: 6
+      nodeCount: 3
+      priorityClassName: logscale-inputs
       resources:
         # limits:
         #   cpu: "500m"
         #   memory: 3Gi
         requests:
-          cpu: "2"
-          memory: 6Gi
+          cpu: "2000m"
+          memory: 5Gi
       tolerations:
         - key: "computeClass"
           operator: "Equal"
           value: "compute"
           effect: "NoSchedule"      
-        - key: "storageClass"
-          operator: "Equal"
-          value: "nvme"
-          effect: "NoSchedule"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -318,6 +308,7 @@ humio:
                     values: ["compute"]                       
                   - key: "storageClass"
                     operator: "Exists"
+
         # podAntiAffinity:
       topologySpreadConstraints:
         - maxSkew: 1
@@ -331,26 +322,23 @@ humio:
                   - "${join("-", compact(["logscale", local.name, local.codename]))}-ingest-only"       
     ui:
       nodeCount: 3
+      priorityClassName: logscale-ui
       resources:
         # limits:
         #   cpu: "1"
         #   memory: 4Gi
         requests:
-          cpu: "250m"
-          memory: 6Gi
+          cpu: "2000m"
+          memory: 5Gi
       tolerations:
         - key: "computeClass"
           operator: "Equal"
           value: "compute"
           effect: "NoSchedule"      
-        - key: "storageClass"
-          operator: "Equal"
-          value: "nvme"
-          effect: "NoSchedule"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:            
+            nodeSelectorTerms:
               - matchExpressions:
                   - key: "kubernetes.io/arch"
                     operator: "In"
@@ -374,7 +362,8 @@ humio:
                     operator: "In"
                     values: ["compute"]                       
                   - key: "storageClass"
-                    operator: "Exists"                           
+                    operator: "Exists"
+                   
         # podAntiAffinity:
       topologySpreadConstraints:
         - maxSkew: 1
@@ -401,14 +390,20 @@ kafka:
                 values: ["linux"]
               - key: "computeClass"
                 operator: "In"
-                values: ["compute"]                 
+                values: ["compute"]
+              - key: "storageClass"
+                operator: "DoesNotExist"
           - matchExpressions:
               - key: "kubernetes.io/arch"
                 operator: "In"
                 values: ["amd64"]
               - key: "kubernetes.io/os"
                 operator: "In"
-                values: ["linux"]                    
+                values: ["linux"]
+              - key: "computeClass"
+                operator: "In"
+                values: ["compute"]
+                
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
@@ -450,7 +445,8 @@ kafka:
   # The Following Configuration is valid for approximatly 1TB/day
   # ref: https://library.humio.com/humio-server/installation-prep.html#installation-prep-rec
   replicas: 3
-  resources:
+  priorityClassName: logscale-core
+  resources:    
     requests:
       # Increase the memory as needed to support more than 5/TB day
       memory: 4500Mi
@@ -487,13 +483,7 @@ zookeeper:
               - key: "computeClass"
                 operator: "In"
                 values: ["compute"]      
-          - matchExpressions:
-              - key: "kubernetes.io/arch"
-                operator: "In"
-                values: ["amd64"]
-              - key: "kubernetes.io/os"
-                operator: "In"
-                values: ["linux"]                           
+                      
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
@@ -528,7 +518,8 @@ zookeeper:
     - key: "computeClass"
       operator: "Equal"
       value: "compute"
-      effect: "NoSchedule"      
+      effect: "NoSchedule"     
+  priorityClassName: logscale-core       
   resources:
     requests:
       memory: 350Mi

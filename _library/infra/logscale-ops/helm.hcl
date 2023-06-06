@@ -99,7 +99,7 @@ inputs = {
 
   release          = "ops"
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.58"
+  chart_version    = "v7.0.0-next.62"
   namespace        = dependency.ns.outputs.name
   create_namespace = true
   project          = "ops"
@@ -128,7 +128,7 @@ humio:
     oauth:
       provider: ${dependency.sso.outputs.issuer}
       client_id: ${dependency.sso.outputs.application_id}
-      client_secret_name: azuread-oidc
+      client_secret_name: sso-secret-azuread-oidc
       client_secret_key: "oidc.azure.clientSecret"
       # groups_claim: "groups"
       scopes: "openid,email,profile"
@@ -163,10 +163,11 @@ humio:
   # Primary Node pool used for digest/storage
   nodeCount: 3
   #In general for these node requests and limits should match
+  priorityClassName: logscale-core
   resources:
     requests:
-      memory: 24Gi
-      cpu: 6
+      memory: 16Gi
+      cpu: 4
     # limits:
     #   memory: 8Gi
     #   cpu: 2
@@ -208,17 +209,7 @@ humio:
                 values: ["linux"]  
               - key: "computeClass"
                 operator: "In"
-                values: ["compute"]      
-          - matchExpressions:
-              - key: "kubernetes.io/arch"
-                operator: "In"
-                values: ["amd64"]
-              - key: "kubernetes.io/os"
-                operator: "In"
-                values: ["linux"]  
-              - key: "computeClass"
-                operator: "In"
-                values: ["compute"]                      
+                values: ["compute"]    
               - key: "storageClass"
                 operator: "In"
                 values: ["nvme"]                      
@@ -238,13 +229,13 @@ humio:
                 values:
                   - "zookeeper"
           topologyKey: kubernetes.io/hostname
-        - labelSelector:
-            matchExpressions:
-              - key: humio.com/node-pool
-                operator: In
-                values:
-                  - "logscale"          
-          topologyKey: kubernetes.io/hostname
+        # - labelSelector:
+        #     matchExpressions:
+        #       - key: humio.com/node-pool
+        #         operator: In
+        #         values:
+        #           - "logscale"          
+        #   topologyKey: kubernetes.io/hostname
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: topology.kubernetes.io/zone
@@ -260,7 +251,7 @@ humio:
     resources:
       requests:
         storage: "200Gi"
-    storageClassName: "premium-rwo"
+    storageClassName: "lvmpv"
   frontEndDataVolumePersistentVolumeClaimSpecTemplate:
     accessModes: ["ReadWriteOnce"]
     resources:
@@ -291,23 +282,20 @@ humio:
           networking.gke.io/managed-certificates: cert-inputs-google-gke-managed-cert
   nodepools:
     ingest:
-      nodeCount: 6
+      nodeCount: 3
+      priorityClassName: logscale-inputs
       resources:
         # limits:
         #   cpu: "500m"
         #   memory: 3Gi
         requests:
-          cpu: "2"
-          memory: 6Gi
+          cpu: "2000m"
+          memory: 5Gi
       tolerations:
         - key: "computeClass"
           operator: "Equal"
           value: "compute"
           effect: "NoSchedule"      
-        - key: "storageClass"
-          operator: "Equal"
-          value: "nvme"
-          effect: "NoSchedule"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -333,9 +321,9 @@ humio:
                     values: ["linux"]  
                   - key: "computeClass"
                     operator: "In"
-                    values: ["compute"]                       
+                    values: ["compute"]     
                   - key: "storageClass"
-                    operator: "Exists"                        
+                    operator: "Exists"                                      
         # podAntiAffinity:
       topologySpreadConstraints:
         - maxSkew: 1
@@ -349,26 +337,23 @@ humio:
                   - "logscale-ingest-only"       
     ui:
       nodeCount: 3
+      priorityClassName: logscale-ui
       resources:
         # limits:
         #   cpu: "1"
         #   memory: 4Gi
         requests:
-          cpu: "250m"
-          memory: 6Gi
+          cpu: "2000m"
+          memory: 3Gi
       tolerations:
         - key: "computeClass"
           operator: "Equal"
           value: "compute"
           effect: "NoSchedule"      
-        - key: "storageClass"
-          operator: "Equal"
-          value: "nvme"
-          effect: "NoSchedule"
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:            
+            nodeSelectorTerms:
               - matchExpressions:
                   - key: "kubernetes.io/arch"
                     operator: "In"
@@ -429,7 +414,19 @@ kafka:
                 values: ["linux"]
               - key: "computeClass"
                 operator: "In"
-                values: ["compute"]                 
+                values: ["compute"]
+              - key: "storageClass"
+                operator: "DoesNotExist"
+          - matchExpressions:
+              - key: "kubernetes.io/arch"
+                operator: "In"
+                values: ["amd64"]
+              - key: "kubernetes.io/os"
+                operator: "In"
+                values: ["linux"]
+              - key: "computeClass"
+                operator: "In"
+                values: ["compute"]
           - matchExpressions:
               - key: "kubernetes.io/arch"
                 operator: "In"
@@ -439,13 +436,13 @@ kafka:
                 values: ["linux"]                    
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                  - "zookeeper"
-          topologyKey: kubernetes.io/hostname
+      #   - labelSelector:
+      #       matchExpressions:
+      #         - key: app.kubernetes.io/name
+      #           operator: In
+      #           values:
+      #             - "zookeeper"
+      #     topologyKey: kubernetes.io/hostname
         - labelSelector:
             matchExpressions:
               - key: app.kubernetes.io/name
@@ -467,6 +464,7 @@ kafka:
             operator: In
             values:
               - "kafka"
+  priorityClassName: logscale-core
   tolerations:
     - key: "computeClass"
       operator: "Equal"
@@ -514,16 +512,23 @@ zookeeper:
                 values: ["linux"]
               - key: "computeClass"
                 operator: "In"
-                values: ["compute"]                 
+                values: ["compute"]      
+          - matchExpressions:
+              - key: "kubernetes.io/arch"
+                operator: "In"
+                values: ["amd64"]
+              - key: "kubernetes.io/os"
+                operator: "In"
+                values: ["linux"]                  
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                  - "kafka"
-          topologyKey: kubernetes.io/hostname
+        # - labelSelector:
+        #     matchExpressions:
+        #       - key: app.kubernetes.io/name
+        #         operator: In
+        #         values:
+        #           - "kafka"
+        #   topologyKey: kubernetes.io/hostname
         - labelSelector:
             matchExpressions:
               - key: app.kubernetes.io/name
@@ -535,6 +540,7 @@ zookeeper:
                 values:
                   - "logscale"
           topologyKey: kubernetes.io/hostname
+  priorityClassName: logscale-core
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: topology.kubernetes.io/zone

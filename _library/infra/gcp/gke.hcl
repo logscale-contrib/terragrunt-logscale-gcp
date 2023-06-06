@@ -92,50 +92,39 @@ inputs = {
     #   auto_repair  = true
     #   autoscaling  = true
     # },
+    # {
+    #   name         = "cluster"
+    #   machine_type = "e2-standard-4"
+    #   min_count    = 0
+    #   max_count    = 1
+    #   # service_account = format("%s@%s.iam.gserviceaccount.com", local.cluster_sa_name, var.project_id)
+    #   auto_upgrade = true
+    #   auto_repair  = true
+    #   autoscaling  = true
+    # },
     {
-      name         = "cluster-a"
+      name         = "small"
       machine_type = "e2-standard-4"
-      min_count    = 1
-      max_count    = 3
-      # service_account = format("%s@%s.iam.gserviceaccount.com", local.cluster_sa_name, var.project_id)
-      auto_upgrade = true
-      auto_repair  = true
-      autoscaling  = true
-    },
-    {
-      name         = "cluster-b"
-      machine_type = "e2-standard-2"
-      min_count    = 0
-      max_count    = 2
-      # service_account = format("%s@%s.iam.gserviceaccount.com", local.cluster_sa_name, var.project_id)
-      auto_upgrade = true
-      auto_repair  = true
-      autoscaling  = true
-    },
-    {
-      name         = "general"
-      machine_type = "c2-standard-4"
       min_count    = 0
       max_count    = 3
-      # service_account = format("%s@%s.iam.gserviceaccount.com", local.cluster_sa_name, var.project_id)
       auto_upgrade = true
       auto_repair  = true
       autoscaling  = true
     },
     {
-      name         = "compute-a"
-      machine_type = "c2-standard-4"
-      min_count    = 0
-      max_count    = 2
-      auto_upgrade = true
-      auto_repair  = true
-      autoscaling  = true
-    },
-    {
-      name         = "compute-b"
+      name         = "large"
       machine_type = "c2-standard-8"
       min_count    = 0
-      max_count    = 2
+      max_count    = 1
+      auto_upgrade = true
+      auto_repair  = true
+      autoscaling  = true
+    },
+    {
+      name         = "medium"
+      machine_type = "c2-standard-4"
+      min_count    = 0
+      max_count    = 4
       auto_upgrade = true
       auto_repair  = true
       autoscaling  = true
@@ -143,7 +132,7 @@ inputs = {
     {
       name                                        = "nvme"
       machine_type                                = "c2-standard-8"
-      min_count                                   = 0
+      min_count                                   = 1
       max_count                                   = 1
       local_nvme_ssd_block_config_local_ssd_count = 1
       # disk_size_gb       = 30
@@ -180,19 +169,10 @@ inputs = {
 
   node_pools_labels = {
     all = {}
-    "cluster-a" = {
+    "medium" = {
       computeClass = "compute"
     }
-    "cluster-b" = {
-      computeClass = "compute"
-    }
-    general = {
-      computeClass = "compute"
-    }
-    "compute-a" = {
-      computeClass = "compute"
-    }
-    "compute-b" = {
+    "large" = {
       computeClass = "compute"
     }
     nvme = {
@@ -209,33 +189,33 @@ inputs = {
   }
 
   node_pools_taints = {
-    general = [
-      {
-        key    = "computeClass"
-        value  = "general"
-        effect = "NO_SCHEDULE"
-      },
-    ]
-    "compute-a" = [
-      {
-        key    = "computeClass"
-        value  = "compute"
-        effect = "NO_SCHEDULE"
-      },
-    ]
-    "compute-b" = [
-      {
-        key    = "computeClass"
-        value  = "compute"
-        effect = "NO_SCHEDULE"
-      },
-    ]
+    # general = [
+    #   {
+    #     key    = "computeClass"
+    #     value  = "general"
+    #     effect = "NO_SCHEDULE"
+    #   },
+    # ]
+    # "compute-a" = [
+    #   {
+    #     key    = "computeClass"
+    #     value  = "compute"
+    #     effect = "NO_SCHEDULE"
+    #   },
+    # ]
+    # "compute-b" = [
+    #   {
+    #     key    = "computeClass"
+    #     value  = "compute"
+    #     effect = "NO_SCHEDULE"
+    #   },
+    # ]
     nvme = [
-      {
-        key    = "computeClass"
-        value  = "compute"
-        effect = "NO_SCHEDULE"
-      },
+      # {
+      #   key    = "computeClass"
+      #   value  = "compute"
+      #   effect = "NO_SCHEDULE"
+      # },
       {
         key    = "storageClass"
         value  = "nvme"

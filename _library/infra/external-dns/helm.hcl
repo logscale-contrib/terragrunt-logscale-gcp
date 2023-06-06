@@ -95,8 +95,8 @@ tolerations:
     operator: Exists
 resources:
   requests: 
-    cpu: 50m
-    memory: 50Mi
+    cpu: 10m
+    memory: 40Mi
   # limits:
   #   cpu: 1
   #   memory: 96Mi

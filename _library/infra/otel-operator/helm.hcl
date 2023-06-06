@@ -86,19 +86,13 @@ manager:
 #   create: false   
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
-    limits:
-      cpu: 250m
-      memory: 128Mi
+      cpu: 10m
+      memory: 40Mi
 kubeRBACProxy:
   resources:
-    limits:
-      cpu: 500m
-      memory: 128Mi
     requests:
-      cpu: 500m
-      memory: 128Mi
+      cpu: 10m
+      memory: 40Mi
 EOF
   )
 

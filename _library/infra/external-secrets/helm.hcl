@@ -91,8 +91,8 @@ tolerations:
     operator: Exists
 resources:
   requests: 
-    cpu: 50m
-    memory: 50Mi
+    cpu: 10m
+    memory: 40Mi
   # limits:
   #   cpu: 1
   #   memory: 64Mi
@@ -121,16 +121,16 @@ serviceAccount:
 certController:
   resources:
     requests: 
-      cpu: 50m
-      memory: 96Mi
+      cpu: 10m
+      memory: 64Mi
     # limits:
     #   cpu: 1
     #   memory: 128Mi
 webhook:
   resources:
     requests: 
-      cpu: 100m
-      memory: 50Mi
+      cpu: 10m
+      memory: 24Mi
     # limits:
     #   cpu: 1
     #   memory: 100Mi

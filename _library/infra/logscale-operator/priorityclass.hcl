@@ -14,6 +14,7 @@ terraform {
 }
 
 
+
 locals {
   # Expose the base source URL so different versions of the module can be deployed in different environments. This will
   # be used to construct the terraform block in the child terragrunt configurations.
@@ -22,23 +23,41 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
+  # Automatically load environment-level variables
+  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+
+  # Extract out common variables for reuse
+  env       = local.environment_vars.locals.environment
+  codename  = local.environment_vars.locals.codename
+  name_vars = read_terragrunt_config(find_in_parent_folders("name.hcl"))
+  name      = local.name_vars.locals.name
+
+  dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
+  domain_name = local.dns.locals.domain_name
+
+  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+
+  argocd        = read_terragrunt_config(find_in_parent_folders("argocd.hcl"))
+  isArgoCluster = local.argocd.locals.isArgoCluster
+
+
 }
 
 
 
 dependency "k8s" {
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
+}
+dependency "k8sEdge" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
-
 }
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../argocd/projects/common/"
+    "${get_terragrunt_dir()}/../../../../ops/apps/argocd/projects/common/",
+    "${get_terragrunt_dir()}/../../external-secrets/helm/",
   ]
 }
-
-
-
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
@@ -61,38 +80,51 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name = "lvm-localpv"
 
-  repository = "https://openebs.github.io/lvm-localpv"
+  name       = "logscale-priorityclass"
+  repository = "https://bedag.github.io/helm-charts/"
 
-  # destination_name = "*"
-
-  release          = "ops"
-  chart            = "lvm-localpv"
-  chart_version    = "1.1.0"
+  release          = "pc"
+  chart            = "raw"
+  chart_version    = "2.0.0"
   namespace        = "kube-system"
   create_namespace = false
   project          = "common"
   skipCrds         = false
 
-
   values = yamldecode(<<EOF
-fullnameOverride: lvm-localpv
-provisioner:
-  image:
-    registry: registry.k8s.io/
-    tag: v3.5.0  
-# lvmPlugin:
-#   allowedTopologies: storageClass=nvme
-lvmNode:
-  nodeSelector:
-    storageClass: "nvme"
-  tolerations:
-    - operator: "Exists"
-  resources:
-    requests:
-      cpu: "50m"
-      memory: "8Mi"
+resources:
+  - apiVersion: scheduling.k8s.io/v1
+    kind: PriorityClass
+    metadata:
+      name: logscale-core
+    value: 100000000
+    globalDefault: false
+    description: "This priority class should only be used for critical priority common pods."
+
+  - apiVersion: scheduling.k8s.io/v1
+    kind: PriorityClass
+    metadata:
+      name: logscale-ui
+    value: 90000000
+    globalDefault: false
+    description: "This priority class should only be used for high priority common pods."
+
+  - apiVersion: scheduling.k8s.io/v1
+    kind: PriorityClass
+    metadata:
+      name: logscale-inputs
+    value: 80000000
+    globalDefault: false
+    description: "This priority class should only be used for high priority common pods."
+  - apiVersion: scheduling.k8s.io/v1
+    kind: PriorityClass
+    metadata:
+      name: utility
+    value: 10000000
+    globalDefault: true
+    description: "This priority class should only be used for high priority common pods."
+
 EOF
   )
 

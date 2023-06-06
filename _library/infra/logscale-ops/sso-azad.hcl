@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v1.4.9"
+  source = "git::https://github.com/logscale-contrib/terraform-azuread-oidc-app.git?ref=v2.0.2"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -81,9 +81,9 @@ inputs = {
     ]
   }]
 
-  secret_name      = "azuread-oidc"
-  secret_namespace = dependency.ns.outputs.name
-  secret_key       = "oidc.azure.clientSecret"
+  # secret_name      = "azuread-oidc"
+  # secret_namespace = dependency.ns.outputs.name
+  # secret_key       = "oidc.azure.clientSecret"
 
 
   assigned_groups = [

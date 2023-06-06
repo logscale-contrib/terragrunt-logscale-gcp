@@ -126,8 +126,8 @@ eventTailer:
   containerOverrides:
     resources:
       requests:
-        cpu: 100m
-        memory: 50M
+        cpu: 50m
+        memory: 50Mi
 
 # -- HostTailer config
 hostTailer:
@@ -144,8 +144,8 @@ hostTailer:
       containerOverrides:
         resources:
           requests:
-            cpu: 100m
-            memory: 50M
+            cpu: 50m
+            memory: 50Mi
 # nodeAgents:
 #   - name: win-agent
 #     profile: windows
@@ -347,7 +347,7 @@ fluentbit:
   resources:
     requests:
       cpu: 50m
-      memory: 100M
+      memory: 64Mi
   tolerations:
     - operator: "Exists"
 
@@ -356,8 +356,8 @@ fluentd:
     replicas: 3
   resources:
     requests:
-      cpu: "1"
-      memory:  200M  
+      cpu: "100m"
+      memory:  128Mi
 EOF
   )
 

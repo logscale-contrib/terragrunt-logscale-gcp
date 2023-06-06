@@ -69,8 +69,8 @@ tolerations:
     operator: Exists
 resources:
   requests:
-    memory: "64Mi"
-    cpu: "50m"
+    memory: "48Mi"
+    cpu: "10m"
   # limits:
   #   memory: "256Mi"
   #   cpu: 1
@@ -92,7 +92,7 @@ prometheus:
 cainjector:
   resources:
     requests:
-      memory: "128Mi"
+      memory: "48Mi"
       cpu: "20m"
     # limits:
     #   memory: "384Mi"

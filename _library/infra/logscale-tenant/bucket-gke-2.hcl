@@ -61,7 +61,7 @@ inputs = {
   location   = local.infra_geo
 
   custom_placement_config = {
-    data_locations : ["US-EAST1", "US-WEST2"]
+    data_locations : ["US-EAST1", "US-WEST1"]
   }
 
   versioning = true
