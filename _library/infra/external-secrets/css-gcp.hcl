@@ -10,8 +10,9 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-k8s-generic-manifest.git?ref=v1.0.0"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
+
 
 
 locals {
@@ -22,39 +23,31 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
-
-  dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
-  domain_name = local.dns.locals.domain_name
-
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+  argocd        = read_terragrunt_config(find_in_parent_folders("argocd.hcl"))
+  isArgoCluster = local.argocd.locals.isArgoCluster
 
 }
 
 
 dependency "k8s" {
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
+}
+dependency "k8sEdge" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
-
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project/",
-    "${get_terragrunt_dir()}/../sa/"
+    "${get_terragrunt_dir()}/../../../../ops/apps/argocd/projects/common/"
   ]
 }
+
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
 provider "kubernetes" {
-  
-    host                   = "https://${dependency.k8s.outputs.endpoint}"    
+    host                   = "https://${dependency.k8s.outputs.endpoint}"
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
@@ -70,16 +63,28 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
+  destination_name = local.argocd.locals.isArgoCluster ? "in-cluster" : dependency.k8sEdge.outputs.name
 
-  manifest = <<EOF
-apiVersion: external-secrets.io/v1beta1
-kind: ClusterSecretStore
-metadata:
-  name: global
-spec:
-  provider:
-    gcpsm:
-      projectID: ${local.gcp_vars.locals.project_id}
+  repository = "https://logscale-contrib.github.io/helm-external-secrets-cluster-secret-store"
+
+  release          = dependency.k8sEdge.outputs.name
+  chart            = "clustersecretstore"
+  chart_version    = "1.0.1"
+  namespace        = "kube-system"
+  create_namespace = false
+  project          = "common"
+  skipCrds         = false
+
+
+  values = yamldecode(<<EOF
+nameOverride: "ops"
+provider:
+  gcpsm:
+    projectID: ${local.gcp_vars.locals.project_id}
 EOF
+  )
 
+  ignoreDifferences = [
+  ]
 }
+

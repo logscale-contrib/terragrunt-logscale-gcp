@@ -10,7 +10,7 @@
 # needs to deploy a different module version, it should redefine this block with a different ref to override the
 # deployed version.
 terraform {
-  source = "tfr:///terraform-module/release/helm?version=2.8.0"
+  source = "git::https://github.com/logscale-contrib/tf-self-managed-logscale-k8s-helm.git?ref=v2.2.0"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -18,17 +18,17 @@ terraform {
 # ---------------------------------------------------------------------------------------------------------------------
 locals {
 
-  gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
-  project_id = local.gcp_vars.locals.project_id
-  region     = local.gcp_vars.locals.region
+  # gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
+  # project_id = local.gcp_vars.locals.project_id
+  # region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  # # Automatically load environment-level variables
+  # environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
+  # # Extract out common variables for reuse
+  # env      = local.environment_vars.locals.environment
+  # name     = local.environment_vars.locals.name
+  # codename = local.environment_vars.locals.codename
 
 
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
@@ -44,23 +44,21 @@ dependency "k8s" {
 }
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../ns/"
+    "${get_terragrunt_dir()}/../projects/ops/"
   ]
 }
-generate "provider_gke" {
-  path      = "provider_gke.tf"
+generate "provider_k8s" {
+  path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-
-provider "helm" {
-  kubernetes {
+provider "kubernetes" {
+  
     host                   = "https://${dependency.k8s.outputs.endpoint}"    
     cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       args        = []
       command     = "gke-gcloud-auth-plugin"
-    }
   }
 }
 EOF
@@ -71,21 +69,19 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  namespace  = "argocd"
+  destination_name = "in-cluster"
+
   repository = "https://logscale-contrib.github.io/helm-google-gke-managed-cert/"
 
-  app = {
-    name             = "cert"
-    create_namespace = true
+  release          = "ops-argocd-cert"
+  chart            = "google-gke-managed-cert"
+  chart_version    = "1.0.3"
+  namespace        = "argocd"
+  create_namespace = true
+  project          = "ops"
 
-    chart   = "google-gke-managed-cert"
-    version = "1.0.3"
-
-    wait   = false
-    deploy = 1
-  }
-  values = [<<EOF
+  values = yamldecode(<<EOF
 domains: ["${local.host_name}.${local.domain_name}"]
-EOF 
-  ]
+EOF
+  )
 }

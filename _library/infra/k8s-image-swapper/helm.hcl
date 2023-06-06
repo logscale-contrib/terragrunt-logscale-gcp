@@ -22,32 +22,30 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
-
-  dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
-  domain_name = local.dns.locals.domain_name
-
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+  argocd        = read_terragrunt_config(find_in_parent_folders("argocd.hcl"))
+  isArgoCluster = local.argocd.locals.isArgoCluster
 
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
-
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
+}
+dependency "k8sEdge" {
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
+}
+dependency "sa" {
+  config_path = "${get_terragrunt_dir()}/../sa/"
+}
+dependency "registry" {
+  config_path = "${get_terragrunt_dir()}/../registry/"
 }
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project/",
-    "${get_terragrunt_dir()}/../sa/",
-    "${get_terragrunt_dir()}/../registry/"
+    "${get_terragrunt_dir()}/../../../../ops/apps/argocd/projects/common/",
+    "${get_terragrunt_dir()}/../sa/"
   ]
 }
 
@@ -74,26 +72,28 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  uniqueName = "${local.name}-${local.codename}"
+  destination_name = local.argocd.locals.isArgoCluster ? "in-cluster" : dependency.k8sEdge.outputs.name
 
-  destination_name = local.destination_name
 
   repository = "https://estahn.github.io/charts/"
 
-  release          = local.codename
+  release          = dependency.k8sEdge.outputs.name
   chart            = "k8s-image-swapper"
   chart_version    = "1.6.1"
   namespace        = "k8s-image-swapper"
-  create_namespace = false
-  project          = "${local.name}-${local.env}-${local.codename}-common"
+  create_namespace = true
+  project          = "common"
 
 
   values = yamldecode(<<EOF
+fullnameOverride: "k8s-image-swapper"
 image:
   tag: 1.5.1
 serviceAccount:
-  create: false
-  name: k8s-image-swapper-${local.name}-${local.codename}
+  create: true
+  name: k8s-image-swapper
+  annotations:
+    "iam.gke.io/gcp-service-account": ${dependency.sa.outputs.gcp_service_account_email}
 config:
   dryRun: false
   logLevel: debug
@@ -114,17 +114,17 @@ config:
     aws:
       disable: true
     gcp:
-      location: ${local.region}
+      location: ${dependency.k8sEdge.outputs.location}
       projectId: ${local.project_id}
-      repositoryId: ${local.name}-${local.env}-${local.codename}
+      repositoryId: ${dependency.registry.outputs.repository_id}
 patch:
   enabled: false
 certmanager:
   enabled: true
 resources:
   requests: 
-    cpu: 50m
-    memory: 64Mi
+    cpu: 10m
+    memory: 30Mi
   # limits:
   #   cpu: 1
   #   memory: 1Gi  

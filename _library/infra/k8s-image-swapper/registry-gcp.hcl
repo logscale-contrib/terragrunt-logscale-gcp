@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-google-registry.git?ref=v1.0.1"
+  source = "git::https://github.com/logscale-contrib/terraform-google-registry.git?ref=v1.1.1"
 }
 
 
@@ -23,14 +23,6 @@ locals {
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
-
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
 
 }
 dependency "k8s" {
@@ -44,7 +36,7 @@ dependency "k8s" {
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
   project_id = local.project_id
-  name       = "${local.name}-${local.env}-${local.codename}"
-  region     = local.gcp_vars.locals.region
+  name       = dependency.k8s.outputs.name
+  region     = dependency.k8s.outputs.location
 
 } 

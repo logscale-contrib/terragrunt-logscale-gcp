@@ -22,31 +22,25 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
-
-  dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
-  domain_name = local.dns.locals.domain_name
-
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+  argocd        = read_terragrunt_config(find_in_parent_folders("argocd.hcl"))
+  isArgoCluster = local.argocd.locals.isArgoCluster
 
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
-
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
+}
+dependency "k8sEdge" {
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
+}
+dependency "sa" {
+  config_path = "${get_terragrunt_dir()}/../sa/"
 }
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project/",
-    "${get_terragrunt_dir()}/../sa/"
+    "${get_terragrunt_dir()}/../../../../ops/apps/argocd/projects/common/"
   ]
 }
 generate "provider_k8s" {
@@ -71,21 +65,21 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  uniqueName = "${local.name}-${local.codename}"
 
-  destination_name = local.destination_name
+  destination_name = local.argocd.locals.isArgoCluster ? "in-cluster" : dependency.k8sEdge.outputs.name
 
   repository = "https://charts.bitnami.com/bitnami"
 
-  release          = local.codename
+  release          = dependency.k8sEdge.outputs.name
   chart            = "external-dns"
   chart_version    = "6.5.*"
   namespace        = "external-dns"
-  create_namespace = false
-  project          = "${local.name}-${local.env}-${local.codename}-common"
+  create_namespace = true
+  project          = "common"
 
 
   values = yamldecode(<<EOF
+fullnameOverride: external-dns
 
 logFormat: json
 provider: google
@@ -101,8 +95,8 @@ tolerations:
     operator: Exists
 resources:
   requests: 
-    cpu: 50m
-    memory: 50Mi
+    cpu: 10m
+    memory: 40Mi
   # limits:
   #   cpu: 1
   #   memory: 96Mi
@@ -121,10 +115,10 @@ affinity:
 
 replicaCount: 2
 serviceAccount:
-  create: false
   automountServiceAccountToken: true
-  name: external-dns-${local.name}-${local.codename}
-txtOwnerId: "${local.codename}.${local.domain_name}"
+  annotations:
+    "iam.gke.io/gcp-service-account": ${dependency.sa.outputs.gcp_service_account_email}
+txtOwnerId: ${local.project_id}
 
 EOF
   )

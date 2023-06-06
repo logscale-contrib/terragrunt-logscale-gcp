@@ -21,18 +21,10 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
-
 }
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
 }
 dependency "k8sEdge" {
   config_path = "${get_terragrunt_dir()}/../../../gke/"
@@ -62,8 +54,13 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  name   = "${local.name}-${local.env}-${local.codename}"
+  name   = dependency.k8sEdge.outputs.name
   server = "https://${dependency.k8sEdge.outputs.endpoint}"
   token  = dependency.manager.outputs.token
   caData = dependency.k8sEdge.outputs.ca_certificate
+
+  cloud       = "gcp"
+  region      = dependency.k8sEdge.outputs.location
+  clusterRole = "tenant"
+
 }

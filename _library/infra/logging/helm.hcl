@@ -14,6 +14,7 @@ terraform {
 }
 
 
+
 locals {
   # Expose the base source URL so different versions of the module can be deployed in different environments. This will
   # be used to construct the terraform block in the child terragrunt configurations.
@@ -22,37 +23,61 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
+  argocd        = read_terragrunt_config(find_in_parent_folders("argocd.hcl"))
+  isArgoCluster = local.argocd.locals.isArgoCluster
+
+
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
+  env       = local.environment_vars.locals.environment
+  codename  = local.environment_vars.locals.codename
+  name_vars = read_terragrunt_config(find_in_parent_folders("name.hcl"))
+  name      = local.name_vars.locals.name
+
 
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+  fqdn = format("%s.%s", join("-", compact(["logscale", local.codename, "ops", "inputs"])), local.domain_name)
 
   #ops-logscale-http-only.logscale-ops.svc.cluster.local
   # insecure_ssl: ${local.inputs.insecure_ssl}
   # protocol: ${local.inputs.protocol}
   # hec_port: ${local.inputs.port}
-  inputs_url   = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "ops-logscale-ingest-only.logscale-ops.svc.cluster.local" : "logscale-ops-inputs.${local.domain_name}"
-  insecure_ssl = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? true : false
-  protocol     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "http" : "https"
-  hec_port     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "8080" : "443"
+
+  # inputs_url   = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "ops-logscale-ingest-only.logscale-ops.svc.cluster.local" : "logscale-ops-inputs.${local.domain_name}"
+  # insecure_ssl = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? true : false
+  # protocol     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "http" : "https"
+  # hec_port     = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "8080" : "443"
+  # isArgoCluster
+  inputs_url   = local.isArgoCluster ? "logscale-ingest-only.logscale-ops.svc.cluster.local" : format("%s.%s", join("-", compact(["logscale", local.codename, "ops", "inputs"])), local.domain_name)
+  insecure_ssl = local.isArgoCluster ? true : false
+  protocol     = local.isArgoCluster ? "http" : "https"
+  hec_port     = local.isArgoCluster ? "8080" : "443"
+
+
+  # inputs_url   =   local.fqdn
+  # insecure_ssl = false
+  # protocol     = "https"
+  # hec_port     = "443" 
+
+
 }
 
 
-dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
 
+dependency "k8s" {
+  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
+}
+dependency "k8sEdge" {
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 
 dependencies {
   paths = [
+    "${get_terragrunt_dir()}/../../../../ops/apps/argocd/projects/common/",
     "${get_terragrunt_dir()}/../secrets/"
   ]
 }
@@ -78,18 +103,18 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  uniqueName = "${local.name}-${local.codename}"
+  destination_name = local.argocd.locals.isArgoCluster ? "in-cluster" : dependency.k8sEdge.outputs.name
 
-  destination_name = local.destination_name
+  name = "logging-operator-logging"
 
   repository = "https://kube-logging.github.io/helm-charts"
 
-  release          = local.codename
+  release          = dependency.k8sEdge.outputs.name
   chart            = "logging-operator-logging"
   chart_version    = "4.1.0"
   namespace        = "logging"
-  create_namespace = false
-  project          = "${local.name}-${local.env}-${local.codename}-common"
+  create_namespace = true
+  project          = "common"
 
   values = yamldecode(<<EOF
 nameOverride: logops
@@ -101,8 +126,8 @@ eventTailer:
   containerOverrides:
     resources:
       requests:
-        cpu: 100m
-        memory: 50M
+        cpu: 50m
+        memory: 50Mi
 
 # -- HostTailer config
 hostTailer:
@@ -119,8 +144,8 @@ hostTailer:
       containerOverrides:
         resources:
           requests:
-            cpu: 100m
-            memory: 50M
+            cpu: 50m
+            memory: 50Mi
 # nodeAgents:
 #   - name: win-agent
 #     profile: windows
@@ -142,8 +167,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cwd.cid: "244466666888888899999999"
-            - cluster_name: ${local.name}-${local.env}-${local.codename}
+            - cluster_name: "${dependency.k8sEdge.outputs.name}"
       match:
       - select:
           labels:
@@ -157,8 +181,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cwd.cid: "244466666888888899999999"    
-            - cluster_name: ${local.name}-${local.env}-${local.codename}
+            - cluster_name: "${dependency.k8sEdge.outputs.name}"
       match:
       - select:
           labels:
@@ -172,8 +195,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cwd.cid: "244466666888888899999999"    
-            - cluster_name: ${local.name}-${local.env}-${local.codename}
+            - cluster_name: "${dependency.k8sEdge.outputs.name}"
       match:
       - exclude:
           labels:
@@ -219,8 +241,7 @@ clusterFlows:
       filters:
         - record_transformer:
             records:
-            - cwd.cid: "244466666888888899999999"    
-            - cluster_name: ${local.name}-${local.env}-${local.codename}   
+            - cluster_name: "${dependency.k8sEdge.outputs.name}"
       match:
       - exclude:
           namespaces:
@@ -269,7 +290,7 @@ clusterOutputs:
         hec_token:
           valueFrom:
             secretKeyRef:
-              name: ops-logscale-infra-kubernetes-cluster-local-event
+              name: ops-logscale-content-infra-kubernetes-cluster-local-event
               key: token
         format:
           type: json
@@ -285,7 +306,7 @@ clusterOutputs:
         hec_token:
           valueFrom:
             secretKeyRef:
-              name: ops-logscale-infra-kubernetes-cluster-local-host
+              name: ops-logscale-content-infra-kubernetes-cluster-local-host
               key: token
         format:
           type: json
@@ -301,7 +322,7 @@ clusterOutputs:
         hec_token:
           valueFrom:
             secretKeyRef:
-              name: ops-logscale-infra-kubernetes-cluster-local-pod
+              name: ops-logscale-content-infra-kubernetes-cluster-local-pod
               key: token
         format:
           type: json          
@@ -317,7 +338,7 @@ clusterOutputs:
         hec_token:
           valueFrom:
             secretKeyRef:
-              name: ops-logscale-apps-kubernetes-cluster-local-pod
+              name: ops-logscale-content-apps-kubernetes-cluster-local-pod
               key: token
         format:
           type: json          
@@ -326,7 +347,7 @@ fluentbit:
   resources:
     requests:
       cpu: 50m
-      memory: 100M
+      memory: 64Mi
   tolerations:
     - operator: "Exists"
 
@@ -335,8 +356,8 @@ fluentd:
     replicas: 3
   resources:
     requests:
-      cpu: "1"
-      memory:  200M  
+      cpu: "100m"
+      memory:  128Mi
 EOF
   )
 

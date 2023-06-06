@@ -22,25 +22,15 @@ locals {
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
 
-  # Automatically load environment-level variables
-  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
-  # Extract out common variables for reuse
-  env      = local.environment_vars.locals.environment
-  name     = local.environment_vars.locals.name
-  codename = local.environment_vars.locals.codename
 
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
-
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
 
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../logscale-ops/gke/"
-
+  config_path = "${get_terragrunt_dir()}/../../../gke/"
 }
 dependency "sso" {
   config_path = "${get_terragrunt_dir()}/../sso-grafana/"
@@ -48,9 +38,8 @@ dependency "sso" {
 
 dependencies {
   paths = [
-    "${get_terragrunt_dir()}/../../common/project/",
-    "${get_terragrunt_dir()}/../ns/",
-    "${get_terragrunt_dir()}/../helm-crds/"
+    "${get_terragrunt_dir()}/../../argocd/projects/ops/",
+    "${get_terragrunt_dir()}/../cert/"
   ]
 }
 generate "provider_k8s" {
@@ -75,23 +64,25 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  uniqueName = "${local.name}-${local.codename}"
 
-  destination_name = local.destination_name
+  destination_name = "in-cluster"
 
   repository = "https://prometheus-community.github.io/helm-charts"
 
-  release          = local.codename
+  release          = "ops"
   chart            = "kube-prometheus-stack"
   chart_version    = "45.30.0"
   namespace        = "monitoring"
-  create_namespace = false
-  project          = "${local.name}-${local.env}-${local.codename}-common"
+  create_namespace = true
+  project          = "ops"
 
   server_side_apply = false
 
   values = yamldecode(<<EOF
+fullnameOverride: grafana
+
 grafana:
+  fullnameOverride: grafana
   service:
     annotations:
       cloud.google.com/neg: '{"ingress": true}' # Creates a NEG after an Ingress is created
@@ -101,7 +92,7 @@ grafana:
       - grafana.${local.domain_name}
     annotations:
       external-dns.alpha.kubernetes.io/hostname: grafana.${local.domain_name}
-      networking.gke.io/managed-certificates: grafana-google-gke-managed-cert
+      networking.gke.io/managed-certificates: ops-grafna-cert-google-gke-managed-cert
   extraSecretMounts:
     - name: azuread-oidc
       secretName: azuread-oidc
