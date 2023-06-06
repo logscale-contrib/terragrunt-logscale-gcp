@@ -29,7 +29,7 @@ locals {
   infra_geo      = local.infra_vars.locals.geo
 
   active_cluster = local.infra_vars.locals.active_cluster
-  active_bucket = local.infra_vars.locals.active_bucket
+  active_bucket  = local.infra_vars.locals.active_bucket
 
   destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.active_cluster]))
 

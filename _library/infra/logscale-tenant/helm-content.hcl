@@ -31,7 +31,7 @@ locals {
   env      = local.environment_vars.locals.environment
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
-  
+
 
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name

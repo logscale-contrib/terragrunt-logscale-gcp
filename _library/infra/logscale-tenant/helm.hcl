@@ -17,14 +17,15 @@ terraform {
 locals {
 
   # Automatically load environment-level variables
-  infra_vars     = read_terragrunt_config(find_in_parent_folders("infra.hcl"))
-  infra_env      = local.infra_vars.locals.environment
-  infra_codename = local.infra_vars.locals.codename
-  infra_geo      = local.infra_vars.locals.geo
-  active_cluster = local.infra_vars.locals.active_cluster
-  active_bucket = local.infra_vars.locals.active_bucket
-
-  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.active_cluster]))
+  infra_vars        = read_terragrunt_config(find_in_parent_folders("infra.hcl"))
+  infra_env         = local.infra_vars.locals.environment
+  infra_codename    = local.infra_vars.locals.codename
+  infra_geo         = local.infra_vars.locals.geo
+  active_cluster    = local.infra_vars.locals.active_cluster
+  active_bucket     = local.infra_vars.locals.active_bucket
+  recover_mode      = local.infra_vars.locals.recover_mode
+  recover_bucket_id = local.infra_vars.locals.recover_bucket_id
+  destination_name  = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.active_cluster]))
 
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
@@ -45,7 +46,7 @@ locals {
   humio_sso_entityID       = local.humio.locals.humio_sso_entityID
 
   bucket_name    = join("-", compact(["logscale", local.name, local.codename, local.active_bucket]))
-
+  recover_bucket = join("-", compact(["logscale", local.name, local.codename, local.recover_bucket_id]))
 }
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../../infra/${local.infra_geo}/ops/gke/"
@@ -88,7 +89,7 @@ inputs = {
 
   release          = join("-", compact(["logscale", local.name, local.codename]))
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.63"
+  chart_version    = "v7.0.0-next.67"
   namespace        = join("-", compact(["logscale", local.name, local.codename]))
   create_namespace = true
   project          = "common"
@@ -98,6 +99,7 @@ inputs = {
   values = yamldecode(<<EOF
 platform: gcp
 humio:
+  drMode: "${local.recover_mode}"
   # External URI
   fqdn: ${join("-", compact(["logscale", local.name, local.codename]))}.${local.domain_name}
   fqdnInputs: ${join("-", compact(["logscale", local.name, local.codename, "inputs"]))}.${local.domain_name}
@@ -130,6 +132,7 @@ humio:
   buckets:
     type: gcp
     name: ${local.bucket_name}
+    recover_bucket: ${local.recover_bucket}
     downloadConcurrency: 20
 
   #Kafka

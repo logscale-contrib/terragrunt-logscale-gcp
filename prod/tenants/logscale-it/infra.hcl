@@ -5,9 +5,12 @@ locals {
   environment = "prod"
   geo         = "us"
 
+  #values are "none",bootstrap,ui,inputs
+  recover_mode   = "none"
   active_cluster = "1"
-  active_bucket = "1"
-  prefix = "1"
-  one    = "1"
-  two    = "2"
+  active_bucket  = "1"
+  recover_bucket_id = ""
+  prefix         = "1"
+  one            = "1"
+  two            = "2"
 }
