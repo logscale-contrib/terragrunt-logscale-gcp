@@ -15,42 +15,45 @@ terraform {
 
 
 locals {
-  # Expose the base source URL so different versions of the module can be deployed in different environments. This will
-  # be used to construct the terraform block in the child terragrunt configurations.
 
-  gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
-  project_id = local.gcp_vars.locals.project_id
-  region     = local.gcp_vars.locals.region
+  # Automatically load environment-level variables
+  infra_vars     = read_terragrunt_config(find_in_parent_folders("infra.hcl"))
+  infra_env      = local.infra_vars.locals.environment
+  infra_codename = local.infra_vars.locals.codename
+  infra_geo      = local.infra_vars.locals.geo
+
+  infra_name       = local.infra_vars.locals.active == "1" ? "1" : "2"
+  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.infra_name]))
 
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
-
   # Extract out common variables for reuse
   env      = local.environment_vars.locals.environment
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
+
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
 
-  destination_name = "${local.name}-${local.env}-${local.codename}" == "${local.name}-${local.env}-ops" ? "in-cluster" : "${local.name}-${local.env}-${local.codename}"
+  humio                    = read_terragrunt_config(find_in_parent_folders("humio.hcl"))
+  humio_rootUser           = local.humio.locals.humio_rootUser
+  humio_license            = local.humio.locals.humio_license
+  humio_sso_idpCertificate = local.humio.locals.humio_sso_idpCertificate
+  humio_sso_signOnUrl      = local.humio.locals.humio_sso_signOnUrl
+  humio_sso_entityID       = local.humio.locals.humio_sso_entityID
+
+  cluster_vars   = read_terragrunt_config(find_in_parent_folders("cluster.hcl"))
+  active_cluster = local.cluster_vars.locals.active
 
 
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../ops/gke/"
-
+  config_path = "${get_terragrunt_dir()}/../../../infra/${local.infra_geo}/ops/gke/"
 }
 
-dependencies {
-  paths = [
-    "${get_terragrunt_dir()}/../ns/",
-    "${get_terragrunt_dir()}/../project/",
-    "${get_terragrunt_dir()}/../helm/",
-  ]
-}
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
@@ -79,16 +82,16 @@ inputs = {
 
   repository = "https://logscale-contrib.github.io/helm-logscale-content"
 
-  release          = "${local.codename}-content"
+  release          = join("-", compact(["logscale", local.name, local.codename, "content"]))
   chart            = "logscale-content"
   chart_version    = "1.3.1"
-  namespace        = "${local.name}-${local.codename}"
+  namespace        = join("-", compact(["logscale", local.name, local.codename]))
   create_namespace = false
-  project          = "${local.name}-${local.env}-${local.codename}-logscale"
+  project          = "common"
 
   values = yamldecode(<<EOF
-fullnameOverride: ${local.codename}-logscale
-managedClusterName: ${local.codename}-logscale
+fullnameOverride: ${join("-", compact(["logscale", local.name, local.codename]))}
+managedClusterName: ${join("-", compact(["logscale", local.name, local.codename]))}
 repositoryDefault:
   ingestSizeInGB: "1073741824"
   storageSizeInGB: "1073741824"
