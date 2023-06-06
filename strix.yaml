@@ -7,13 +7,13 @@ data:
 kind: ConfigMap
 metadata:
   name: strix-bqsu-fixedrate
-  namespace: logscale-east
+  namespace: logscale-ps
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: tyto-bqsu-strix
-  namespace: logscale-east
+  namespace: logscale-ps
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -41,19 +41,19 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: tyto-bqsu-strix
-  namespace: logscale-east
+  namespace: logscale-ps
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: strix-bqsu-fixedrate
-  namespace: logscale-east
+  namespace: logscale-ps
   labels:
     app.kubernetes.io/name: strix
     app.kubernetes.io/instance: tyto-bqsu-strix
     app.kubernetes.io/version: "1.0"
 spec:
-  replicas: 9
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: strix
@@ -111,10 +111,10 @@ spec:
               # value: bc9ed0c0-a19f-4cbb-b6ea-d89fb28c3a1a
               valueFrom:
                 secretKeyRef:
-                  name: east-logscale-strix-strix-local
+                  name: logscale-ps-strix-strix-local
                   key: token
             - name: HUMIO_BASE_URL
-              value: "https://logscale-east-inputs.gcp.dev.logsr.life"
+              value: "https://logscale-ps-inputs.gcp.logsr.life"
               # value: "http://east-logscale-ingest-only:8080"
               # value: "https://tyto-bqsu.perf-internal.humio.net/api/v1/ingest/hec"
           resources:

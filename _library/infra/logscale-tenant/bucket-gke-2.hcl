@@ -28,7 +28,8 @@ locals {
   infra_env      = local.infra_vars.locals.environment
   infra_codename = local.infra_vars.locals.codename
   infra_geo      = local.infra_vars.locals.geo
-
+  cluster_id   = local.infra_vars.locals.two
+  
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
@@ -37,8 +38,6 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
-  cluster_vars = read_terragrunt_config(find_in_parent_folders("cluster.hcl"))
-  cluster_id   = local.cluster_vars.locals.one
   bucket_vars  = read_terragrunt_config("bucket.hcl")
   suffix       = local.bucket_vars.locals.suffix
 

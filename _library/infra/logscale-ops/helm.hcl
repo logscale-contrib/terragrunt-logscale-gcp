@@ -99,7 +99,7 @@ inputs = {
 
   release          = "ops"
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.62"
+  chart_version    = "v7.0.0-next.63"
   namespace        = dependency.ns.outputs.name
   create_namespace = true
   project          = "ops"

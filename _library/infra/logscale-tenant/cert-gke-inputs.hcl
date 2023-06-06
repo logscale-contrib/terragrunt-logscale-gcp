@@ -28,8 +28,10 @@ locals {
   infra_codename = local.infra_vars.locals.codename
   infra_geo      = local.infra_vars.locals.geo
 
-  infra_name       = local.infra_vars.locals.active == "1" ? "1" : "2"
-  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.infra_name]))
+  active_cluster = local.infra_vars.locals.active_cluster
+  active_bucket = local.infra_vars.locals.active_bucket
+
+  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.active_cluster]))
 
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
@@ -45,7 +47,7 @@ locals {
 }
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../infra/${local.infra_geo}/ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../infra/${local.infra_geo}/ops/gke/"
 }
 
 

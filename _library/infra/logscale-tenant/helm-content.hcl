@@ -21,9 +21,9 @@ locals {
   infra_env      = local.infra_vars.locals.environment
   infra_codename = local.infra_vars.locals.codename
   infra_geo      = local.infra_vars.locals.geo
+  active_cluster = local.infra_vars.locals.active_cluster
 
-  infra_name       = local.infra_vars.locals.active == "1" ? "1" : "2"
-  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.infra_name]))
+  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.active_cluster]))
 
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
@@ -31,7 +31,7 @@ locals {
   env      = local.environment_vars.locals.environment
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
-
+  
 
   dns         = read_terragrunt_config(find_in_parent_folders("dns.hcl"))
   domain_name = local.dns.locals.domain_name
@@ -43,15 +43,13 @@ locals {
   humio_sso_signOnUrl      = local.humio.locals.humio_sso_signOnUrl
   humio_sso_entityID       = local.humio.locals.humio_sso_entityID
 
-  cluster_vars   = read_terragrunt_config(find_in_parent_folders("cluster.hcl"))
-  active_cluster = local.cluster_vars.locals.active
 
 
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../infra/${local.infra_geo}/ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../infra/${local.infra_geo}/ops/gke/"
 }
 
 generate "provider_k8s" {

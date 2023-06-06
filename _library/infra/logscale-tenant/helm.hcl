@@ -21,9 +21,10 @@ locals {
   infra_env      = local.infra_vars.locals.environment
   infra_codename = local.infra_vars.locals.codename
   infra_geo      = local.infra_vars.locals.geo
+  active_cluster = local.infra_vars.locals.active_cluster
+  active_bucket = local.infra_vars.locals.active_bucket
 
-  infra_name       = local.infra_vars.locals.active == "1" ? "1" : "2"
-  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.infra_name]))
+  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.active_cluster]))
 
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
@@ -43,27 +44,20 @@ locals {
   humio_sso_signOnUrl      = local.humio.locals.humio_sso_signOnUrl
   humio_sso_entityID       = local.humio.locals.humio_sso_entityID
 
-  cluster_vars   = read_terragrunt_config(find_in_parent_folders("cluster.hcl"))
-  active_cluster = local.cluster_vars.locals.active
-  bucket_name    = join("-", compact(["logscale", local.name, local.codename, local.active_cluster]))
+  bucket_name    = join("-", compact(["logscale", local.name, local.codename, local.active_bucket]))
 
 }
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../infra/${local.infra_geo}/ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../infra/${local.infra_geo}/ops/gke/"
 }
 
 dependency "sso" {
-  config_path = "${get_terragrunt_dir()}/../sso/"
+  config_path = "${get_terragrunt_dir()}/../../sso/"
 }
 dependency "sa" {
-  config_path = "${get_terragrunt_dir()}/../sa/sa-${local.active_cluster}/"
+  config_path = "${get_terragrunt_dir()}/../../sa/sa-${local.active_cluster}/"
 }
-dependencies {
-  paths = [
-    "${get_terragrunt_dir()}/../cert-gke-inputs/",
-    "${get_terragrunt_dir()}/../cert-gke-ui/",
-  ]
-}
+
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
@@ -94,7 +88,7 @@ inputs = {
 
   release          = join("-", compact(["logscale", local.name, local.codename]))
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.62"
+  chart_version    = "v7.0.0-next.63"
   namespace        = join("-", compact(["logscale", local.name, local.codename]))
   create_namespace = true
   project          = "common"

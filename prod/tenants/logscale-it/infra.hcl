@@ -5,7 +5,8 @@ locals {
   environment = "prod"
   geo         = "us"
 
-  active = "1"
+  active_cluster = "2"
+  active_bucket = "1"
   prefix = "1"
   one    = "1"
   two    = "2"
