@@ -153,7 +153,8 @@ humio:
   #Image is shared by all node pools
   image:
     # tag: 1.89.0--SNAPSHOT--build-423199--SHA-a5fb8c27a9f860a7d591a8dad518db11522cbb68
-    tag: 1.93.0--SNAPSHOT--build-434317--SHA-a30bd49699d235e342f6c44fe2c85ca561a4a3e2
+    # tag: 1.93.0--SNAPSHOT--build-434317--SHA-a30bd49699d235e342f6c44fe2c85ca561a4a3e2
+    tag: 1.94.0--SNAPSHOT--build-441325--SHA-7a190e7592574ff11dc7a4698c61741b9f0ceade
   # Primary Node pool used for digest/storage
   nodeCount: 3
   #In general for these node requests and limits should match
