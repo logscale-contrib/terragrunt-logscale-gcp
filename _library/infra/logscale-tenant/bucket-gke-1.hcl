@@ -60,7 +60,7 @@ inputs = {
   location   = local.infra_geo
 
   custom_placement_config = {
-    data_locations : ["US-EAST1", "US-WEST1"]
+    data_locations : ["US-EAST1", "US-WEST2"]
   }
 
   versioning = true
@@ -68,7 +68,7 @@ inputs = {
     {
       "action" : { "type" : "Delete" },
       "condition" : {
-        "daysSinceNoncurrentTime" : 2
+        "days_since_noncurrent_time" : 2
       }
     }
   ]
