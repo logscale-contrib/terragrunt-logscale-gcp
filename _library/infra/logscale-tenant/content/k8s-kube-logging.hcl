@@ -43,13 +43,22 @@ locals {
   humio_sso_signOnUrl      = local.humio.locals.humio_sso_signOnUrl
   humio_sso_entityID       = local.humio.locals.humio_sso_entityID
 
+  # Automatically load environment-level variables
+  content_vars = read_terragrunt_config("content.hcl")
+  # Extract out common variables for reuse
+  prefix            = local.content_vars.locals.prefix
+  suffix            = local.content_vars.locals.suffix
+  ingestSizeInGB    = local.content_vars.locals.ingestSizeInGB == "" ? "1073741824" : local.content_vars.locals.ingestSizeInGB
+  storageSizeInGB   = local.content_vars.locals.storageSizeInGB == "" ? "1073741824" : local.content_vars.locals.storageSizeInGB
+  timeInDays        = local.content_vars.locals.timeInDays == "" ? "999" : local.content_vars.locals.timeInDays
+  allowDataDeletion = local.content_vars.locals.allowDataDeletion
 
 
 }
 
 
 dependency "k8s" {
-  config_path = "${get_terragrunt_dir()}/../../../../infra/${local.infra_geo}/ops/gke/"
+  config_path = "${get_terragrunt_dir()}/../../../../../infra/${local.infra_geo}/ops/gke/"
 }
 
 generate "provider_k8s" {
@@ -74,13 +83,12 @@ EOF
 # environments.
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
-  uniqueName = "${local.name}-${local.codename}"
 
   destination_name = local.destination_name
 
   repository = "https://logscale-contrib.github.io/helm-logscale-content"
 
-  release          = join("-", compact(["logscale", local.name, local.codename, "content"]))
+  release          = join("-", compact(["logscale", local.prefix, local.name, local.codename, "content-k8s", local.suffix]))
   chart            = "logscale-content"
   chart_version    = "1.3.1"
   namespace        = join("-", compact(["logscale", local.name, local.codename]))
@@ -91,19 +99,18 @@ inputs = {
 fullnameOverride: ${join("-", compact(["logscale", local.name, local.codename]))}
 managedClusterName: ${join("-", compact(["logscale", local.name, local.codename]))}
 repositoryDefault:
-  ingestSizeInGB: "1073741824"
-  storageSizeInGB: "1073741824"
-  timeInDays: "9999"
-  allowDataDeletion: false
+  ingestSizeInGB: "${local.ingestSizeInGB}"
+  storageSizeInGB: "${local.storageSizeInGB}"
+  timeInDays: "${local.timeInDays}"
+  allowDataDeletion: ${local.allowDataDeletion}
 eso:
   secretStoreRefs:
     - name: ops
       kind: ClusterSecretStore  
 repositories:
-  - name: iaas-google-cloud
-  - name: apps-kubernetes
+  - name: ${join("-", compact([local.prefix, "kubernetes-apps", local.suffix]))}
     parsers:
-      - name: kube-logging-pod
+      - name: kube-logging-pods
         parserScript: |
           parsejson() 
           | case {
@@ -171,13 +178,13 @@ repositories:
             - |
               {"stream":"stderr","logtag":"F","message":"{\"level\":\"info\",\"ts\":\"2023-05-08T11:54:36.701998152Z\",\"caller\":\"controllers/humiocluster_pod_status.go:106\",\"func\":\"github.com/humio/humio-operator/controllers.(*HumioClusterReconciler).getPodsStatus\",\"msg\":\"pod status readyCount=3 notReadyCount=0 podsReady=[ops-logscale-core-zvpuwy ops-logscale-core-ndztkg ops-logscale-core-uupmaq] podsNotReady=[]\",\"Operator.Commit\":\"58aaa7326f32e96a85bda10acfce95fb86509bce\",\"Operator.Date\":\"2023-04-06T15:23:58+00:00\",\"Operator.Version\":\"0.18.0\",\"Request.Namespace\":\"logscale-ops\",\"Request.Name\":\"ops-logscale\",\"Request.Type\":\"HumioClusterReconciler\",\"Reconcile.ID\":\"nbluea\"}","kubernetes":{"pod_name":"ops-678d8cd7bc-z72r5","namespace_name":"logscale-operator","pod_id":"5fe1b843-01ec-4d29-bfb7-796665c76f97","labels":{"app":"humio-operator","app.kubernetes.io/instance":"ops","app.kubernetes.io/managed-by":"Helm","app.kubernetes.io/name":"humio-operator","helm.sh/chart":"humio-operator-0.18.0","pod-template-hash":"678d8cd7bc"},"annotations":{"productID":"none","productName":"humio-operator","productVersion":"0.18.0"},"host":"gke-logscale-prod-ops-compute-44fb8724-0pzt","container_name":"humio-operator","docker_id":"0e5bae5bd0edc93a1281131aebf3ccaa56926f3cd2b9fd969f104bfb4e549ef8","container_hash":"docker.io/humio/humio-operator@sha256:f78a981d3bdbffddd097a7395f859eb6d2ffebfd0345c96b4385c8b5ec3eab1c","container_image":"docker.io/humio/humio-operator:0.18.0"}}
     ingestTokens:
-      - name: cluster-local-pod
-        parserName: kube-logging-pod
+      - name: kube-logging-pods
+        parserName: kube-logging-pods
         eso:
           push: true        
-  - name: infra-kubernetes
+  - name: ${join("-", compact([local.prefix, "kubernetes-infra", local.suffix]))}
     parsers:
-      - name: kube-logging-event
+      - name: kube-logging-events
         parserScript: |
             | @type:="kube-logging-event"
             | parsejson()
@@ -212,7 +219,7 @@ repositories:
           - cluster_name
           - cwd.cid
           - "_SYSTEMD_UNIT"
-      - name: kube-logging-pod
+      - name: kube-logging-pods
         parserScript: |
           parsejson() 
           | case {
@@ -249,36 +256,19 @@ repositories:
           - kubernetes.labels.app.kubernetes.io_instance
           - kubernetes.labels.app.kubernetes.io_component        
     ingestTokens:
-      - name: cluster-local-event
-        parserName: kube-logging-event
+      - name: kube-logging-events
+        parserName: kube-logging-events
         eso:
           push: true        
-      - name: cluster-local-host
+      - name: kube-logging-host
         parserName: kube-logging-host
         eso:
           push: true        
-      - name: cluster-local-pod
-        parserName: kube-logging-pod
+      - name: kube-logging-pods
+        parserName: kube-logging-pods
         eso:
           push: true        
-  - name: strix
-    parsers:
-      - name: strix
-        parserScript: |
-            /^(?<ts>[^ ]*) loglevel=(?<loglevel>[^ ]*) (?<message>.*) testField\d+=(?<testField>\d+) (?<data>.*)/
-            | parseTimestamp(field="ts") 
-            | drop([ts])
-        testData:
-            - |
-              2023-05-27T14:36:02.693Z loglevel=INFO hello world testField100=91 WzZos2POz7PWo4lZAPAq
-        tagFields:
-          - "testField"
-          - loglevel
-    ingestTokens:
-      - name: strix-local
-        parserName: strix
-        eso:
-          push: false        
+
 EOF
   )
 
