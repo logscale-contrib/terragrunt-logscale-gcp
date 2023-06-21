@@ -11,7 +11,7 @@
 # deployed version.
 
 terraform {
-  source = "git::https://github.com/logscale-contrib/terraform-google-kubernetes-engine.git?ref=new-nvme"
+  source = "git::https://github.com/logscale-contrib/terraform-google-kubernetes-engine.git?ref=next"
 }
 
 

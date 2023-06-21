@@ -60,12 +60,12 @@ generate "provider_k8s" {
   contents  = <<EOF
 provider "kubernetes" {
   
-    host                   = "https://${dependency.k8s.outputs.endpoint}"    
-    cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = []
-      command     = "gke-gcloud-auth-plugin"
+  host                   = "${dependency.k8s.outputs.exec_host}"    
+  cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
+  exec {
+    api_version = "${dependency.k8s.outputs.exec_api}"
+    command     = "${dependency.k8s.outputs.exec_command}"
+    args        = ${jsonencode(dependency.k8s.outputs.exec_args)}
   }
 }
 EOF
