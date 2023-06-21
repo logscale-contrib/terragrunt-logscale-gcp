@@ -5,4 +5,5 @@
 locals {
   region     = "us-central1"
   project_id = "logsr-life-production"
+  backend_bucket = "logsrlife-terragrunt"
 }

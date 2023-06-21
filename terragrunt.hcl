@@ -8,7 +8,8 @@ locals {
   gcp_vars   = read_terragrunt_config(find_in_parent_folders("gcp.hcl"))
   project_id = local.gcp_vars.locals.project_id
   region     = local.gcp_vars.locals.region
-
+  backend_bucket = local.gcp_vars.locals.backend_bucket
+  
   # # Automatically load environment-level variables
   # environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
@@ -56,7 +57,7 @@ remote_state {
   }
   config = {
     project = local.project_id
-    bucket  = "logsrlife-terragrunt"
+    bucket  = "${local.backend_bucket}"
     prefix  = "logscale/${path_relative_to_include()}"
   }
 }
