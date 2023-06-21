@@ -28,8 +28,8 @@ locals {
   infra_env      = local.infra_vars.locals.environment
   infra_codename = local.infra_vars.locals.codename
   infra_geo      = local.infra_vars.locals.geo
-  cluster_id   = local.infra_vars.locals.one
-  
+  cluster_id     = local.infra_vars.locals.one
+
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
@@ -38,8 +38,8 @@ locals {
   name     = local.environment_vars.locals.name
   codename = local.environment_vars.locals.codename
 
-  bucket_vars  = read_terragrunt_config("bucket.hcl")
-  suffix       = local.bucket_vars.locals.suffix
+  bucket_vars = read_terragrunt_config("bucket.hcl")
+  suffix      = local.bucket_vars.locals.suffix
 
 }
 dependency "sa1" {
@@ -60,7 +60,7 @@ inputs = {
   location   = local.infra_geo
 
   custom_placement_config = {
-    data_locations : ["US-EAST1", "US-WEST1"]
+    data_locations : ["US-EAST1", "US-WEST2"]
   }
 
   versioning = true
@@ -68,7 +68,7 @@ inputs = {
     {
       "action" : { "type" : "Delete" },
       "condition" : {
-        "daysSinceNoncurrentTime" : 2
+        "days_since_noncurrent_time" : 2
       }
     }
   ]
