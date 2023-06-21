@@ -54,12 +54,12 @@ generate "provider_k8s" {
   contents  = <<EOF
 provider "kubernetes" {
   
-    host                   = "https://${dependency.k8s.outputs.endpoint}"    
-    cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = []
-      command     = "gke-gcloud-auth-plugin"
+  host                   = "${dependency.k8s.outputs.exec_host}"    
+  cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
+  exec {
+    api_version = "${dependency.k8s.outputs.exec_api}"
+    command     = "${dependency.k8s.outputs.exec_command}"
+    args        = ${jsonencode(dependency.k8s.outputs.exec_args)}
   }
 }
 EOF
@@ -92,11 +92,11 @@ inputs = {
   assigned_groups = [
     {
       #display_name = "consultant",
-      group_id = "d6984f88-0dcc-4ac6-bdbb-8fd8deb99415"
+      group_id = "cd688a6d-cfd7-411e-9e05-18e792f73960"
     },
     {
       #display_name = "tech-lead",
-      group_id = "9e9e711b-9028-472f-a966-7ed7e0b704ae"
+      group_id = "d3a25eb5-6990-4eb8-9118-f27dbb6da9ac"
     }
   ]
 }

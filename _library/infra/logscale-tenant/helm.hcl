@@ -17,14 +17,16 @@ terraform {
 locals {
 
   # Automatically load environment-level variables
-  infra_vars     = read_terragrunt_config(find_in_parent_folders("infra.hcl"))
-  infra_env      = local.infra_vars.locals.environment
-  infra_codename = local.infra_vars.locals.codename
-  infra_geo      = local.infra_vars.locals.geo
-  active_cluster = local.infra_vars.locals.active_cluster
-  active_bucket = local.infra_vars.locals.active_bucket
-
-  destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.active_cluster]))
+  infra_vars           = read_terragrunt_config(find_in_parent_folders("infra.hcl"))
+  infra_env            = local.infra_vars.locals.environment
+  infra_codename       = local.infra_vars.locals.codename
+  infra_geo            = local.infra_vars.locals.geo
+  active_cluster       = local.infra_vars.locals.active_cluster
+  active_bucket        = local.infra_vars.locals.active_bucket
+  recover_mode         = local.infra_vars.locals.recover_mode
+  recoverFromBucketID  = local.infra_vars.locals.recoverFromBucketID
+  recoverFromReplaceID = local.infra_vars.locals.recoverFromReplaceID
+  destination_name     = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.active_cluster]))
 
   # Automatically load environment-level variables
   environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
@@ -44,8 +46,9 @@ locals {
   humio_sso_signOnUrl      = local.humio.locals.humio_sso_signOnUrl
   humio_sso_entityID       = local.humio.locals.humio_sso_entityID
 
-  bucket_name    = join("-", compact(["logscale", local.name, local.codename, local.active_bucket]))
-
+  bucket_name                = join("-", compact(["logscale", local.name, local.codename, local.active_bucket]))
+  recoverFromBucketID_value  = join("-", compact(["logscale", local.name, local.codename, local.recoverFromBucketID]))
+  recoverFromReplaceID_value = "${join("-", compact(["logscale", local.name, local.codename, local.recoverFromReplaceID]))}/${join("-", compact(["logscale", local.name, local.codename, local.recoverFromBucketID]))}"
 }
 dependency "k8s" {
   config_path = "${get_terragrunt_dir()}/../../../../infra/${local.infra_geo}/ops/gke/"
@@ -64,12 +67,12 @@ generate "provider_k8s" {
   contents  = <<EOF
 provider "kubernetes" {
   
-    host                   = "https://${dependency.k8s.outputs.endpoint}"    
-    cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = []
-      command     = "gke-gcloud-auth-plugin"
+  host                   = "${dependency.k8s.outputs.exec_host}"    
+  cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
+  exec {
+    api_version = "${dependency.k8s.outputs.exec_api}"
+    command     = "${dependency.k8s.outputs.exec_command}"
+    args        = ${jsonencode(dependency.k8s.outputs.exec_args)}
   }
 }
 EOF
@@ -88,7 +91,7 @@ inputs = {
 
   release          = join("-", compact(["logscale", local.name, local.codename]))
   chart            = "logscale"
-  chart_version    = "v7.0.0-next.63"
+  chart_version    = "v7.0.0-next.103"
   namespace        = join("-", compact(["logscale", local.name, local.codename]))
   create_namespace = true
   project          = "common"
@@ -96,8 +99,10 @@ inputs = {
   server_side_apply = false
 
   values = yamldecode(<<EOF
-platform: gcp
+platform: 
+  provider: gcp
 humio:
+  drMode: "${local.recover_mode}"
   # External URI
   fqdn: ${join("-", compact(["logscale", local.name, local.codename]))}.${local.domain_name}
   fqdnInputs: ${join("-", compact(["logscale", local.name, local.codename, "inputs"]))}.${local.domain_name}
@@ -130,6 +135,8 @@ humio:
   buckets:
     type: gcp
     name: ${local.bucket_name}
+    recoverFromBucketID: ${local.recoverFromBucketID_value}
+    recoverFromReplace: ${local.recoverFromReplaceID_value}
     downloadConcurrency: 20
 
   #Kafka
@@ -146,7 +153,8 @@ humio:
   #Image is shared by all node pools
   image:
     # tag: 1.89.0--SNAPSHOT--build-423199--SHA-a5fb8c27a9f860a7d591a8dad518db11522cbb68
-    tag: 1.93.0--SNAPSHOT--build-434317--SHA-a30bd49699d235e342f6c44fe2c85ca561a4a3e2
+    # tag: 1.93.0--SNAPSHOT--build-434317--SHA-a30bd49699d235e342f6c44fe2c85ca561a4a3e2
+    tag: 1.94.0--SNAPSHOT--build-441325--SHA-7a190e7592574ff11dc7a4698c61741b9f0ceade
   # Primary Node pool used for digest/storage
   nodeCount: 3
   #In general for these node requests and limits should match

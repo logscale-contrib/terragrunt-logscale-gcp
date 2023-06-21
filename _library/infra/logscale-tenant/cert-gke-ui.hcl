@@ -29,7 +29,7 @@ locals {
   infra_geo      = local.infra_vars.locals.geo
 
   active_cluster = local.infra_vars.locals.active_cluster
-  active_bucket = local.infra_vars.locals.active_bucket
+  active_bucket  = local.infra_vars.locals.active_bucket
 
   destination_name = join("-", compact([local.infra_codename, local.infra_env, local.infra_geo, local.active_cluster]))
 
@@ -57,12 +57,12 @@ generate "provider_k8s" {
   contents  = <<EOF
 provider "kubernetes" {
   
-    host                   = "https://${dependency.k8s.outputs.endpoint}"    
-    cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = []
-      command     = "gke-gcloud-auth-plugin"
+  host                   = "${dependency.k8s.outputs.exec_host}"    
+  cluster_ca_certificate = base64decode("${dependency.k8s.outputs.ca_certificate}")
+  exec {
+    api_version = "${dependency.k8s.outputs.exec_api}"
+    command     = "${dependency.k8s.outputs.exec_command}"
+    args        = ${jsonencode(dependency.k8s.outputs.exec_args)}
   }
 }
 EOF
