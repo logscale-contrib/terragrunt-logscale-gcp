@@ -202,9 +202,9 @@ humio:
               - key: "computeClass"
                 operator: "In"
                 values: ["compute"]      
-              - key: "storageClass"
-                operator: "In"
-                values: ["nvme"]      
+              # - key: "storageClass"
+              #   operator: "In"
+              #   values: ["nvme"]      
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
@@ -236,8 +236,9 @@ humio:
     accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        storage: "200Gi"
-    storageClassName: "lvmpv"
+        storage: "100Gi"
+    # storageClassName: "lvmpv"
+    storageClassName: premium-rwo
   frontEndDataVolumePersistentVolumeClaimSpecTemplate:
     accessModes: ["ReadWriteOnce"]
     resources:

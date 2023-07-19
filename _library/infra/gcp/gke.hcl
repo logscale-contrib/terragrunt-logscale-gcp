@@ -45,7 +45,9 @@ dependency "vpc" {
 # ---------------------------------------------------------------------------------------------------------------------
 inputs = {
   # version = "25.0.0"
-  release_channel = "RAPID"
+  release_channel = "REGULAR"
+  kubernetes_version = "1.27"
+  logging_enabled_components = ["SYSTEM_COMPONENTS"]
 
   project_id             = local.project_id
   name                   = dependency.vpc.outputs.network_name
