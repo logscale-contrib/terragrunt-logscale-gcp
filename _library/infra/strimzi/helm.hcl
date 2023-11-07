@@ -64,7 +64,7 @@ inputs = {
 
   release          = "ops"
   chart            = "strimzi-kafka-operator"
-  chart_version    = "0.35.*"
+  chart_version    = "0.36.*"
   namespace        = "strimzi-operator"
   create_namespace = true
   project          = "common"
